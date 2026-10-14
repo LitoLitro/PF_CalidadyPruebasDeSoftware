@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MiMundoUPN</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --tinta: #14213D;
+      --tinta-suave: #556579;
+      --ruta: #FFC21A;
+      --usted: #2F6BFF;
+      --suelo: #E8EEF3;
+      --fuera: #D3DCE5;
+      --pasillo: #C3CFDA;
+      --patio: #D3E4CF;
+      --panel: #FFFFFF;
+      --linea: #DCE3EA;
+      --servicio: #0F6B5C;
+      --error: #B3261E;
+      --error-fondo: #FDECEA;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.4;
+      color: var(--tinta);
+      background: var(--panel);
+    }
+    button, input, select { font: inherit; color: inherit; }
+    :focus-visible { outline: 3px solid var(--usted); outline-offset: 2px; }
+
+    /* ---------- Estructura ---------- */
+    .app {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      height: 100vh;
+      height: 100dvh;
+    }
+    .panel {
+      overflow-y: auto;
+      padding: 22px 22px 28px;
+      border-right: 1px solid var(--linea);
+    }
+    .mapa-wrap { position: relative; background: var(--fuera); min-width: 0; }
+    #mapa { display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+    /* ---------- Panel ---------- */
+    .marca { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
+    .marca svg { width: 34px; height: 34px; flex: none; }
+    .marca span {
+      font-size: 22px;
+      font-weight: 800;
+      font-stretch: 118%;
+      letter-spacing: -0.01em;
+    }
+
+    .campo { margin-bottom: 18px; }
+    .campo > label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .ayuda { margin: 6px 0 0; font-size: 13px; color: var(--tinta-suave); }
+
+    select, input[type="search"] {
+      width: 100%;
+      height: 46px;
+      padding: 0 12px;
+      background: #fff;
+      border: 1.5px solid #B4C1CE;
+      border-radius: 10px;
+    }
+    select:hover, input[type="search"]:hover { border-color: var(--tinta-suave); }
+
+    .fila-buscar { display: flex; gap: 8px; }
+    .fila-buscar input { flex: 1; min-width: 0; }
+    .boton {
+      flex: none;
+      height: 46px;
+      padding: 0 18px;
+      font-weight: 700;
+      color: var(--ruta);
+      background: var(--tinta);
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .boton:hover { background: #22345C; }
+
+    /* ---------- Resultado ---------- */
+    #resultado:empty { display: none; }
+    #resultado { margin: 4px 0 22px; padding-top: 18px; border-top: 1px solid var(--linea); }
+    .res-titulo {
+      margin: 0;
+      font-size: 30px;
+      font-weight: 800;
+      font-stretch: 115%;
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+    }
+    .res-sub { margin: 6px 0 0; color: var(--tinta-suave); }
+
+    .linea { list-style: none; margin: 20px 0 0; padding: 0; }
+    .linea li { position: relative; padding: 0 0 18px 36px; min-height: 30px; }
+    .linea li:last-child { padding-bottom: 0; }
+    /* el riel: tramo amarillo con borde oscuro, como una linea de metro */
+    .linea li:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 12px;
+      width: 8px;
+      height: 100%;
+      background: var(--ruta);
+      border-left: 2px solid var(--tinta);
+      border-right: 2px solid var(--tinta);
+    }
+    .parada {
+      position: absolute;
+      left: 2px;
+      top: 4px;
+      z-index: 1;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border: 3px solid var(--tinta);
+      border-radius: 50%;
+    }
+    .linea .inicio .parada { background: var(--usted); }
+    .linea .fin .parada { background: var(--ruta); }
+    .linea .nombre { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+    .linea .tramo { display: block; margin-top: 2px; font-size: 13px; color: var(--tinta-suave); }
+    .linea .fin .nombre { font-weight: 800; }
+
+    .error {
+      padding: 12px 14px;
+      background: var(--error-fondo);
+      border-left: 4px solid var(--error);
+      border-radius: 6px;
+    }
+    .error strong { display: block; color: var(--error); font-size: 16px; }
+    .error p { margin: 4px 0 0; }
+
+    /* ---------- Lista de ambientes ---------- */
+    .lista-cab { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+    .lista-cab h2 { margin: 0; font-size: 15px; font-weight: 700; }
+    .lista-cab span { font-size: 13px; color: var(--tinta-suave); }
+    #lista { list-style: none; margin: 0; padding: 0; }
+    .fila {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 8px 10px;
+      text-align: left;
+      background: transparent;
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .fila:hover { background: #F0F4F7; }
+    .fila.activa { background: #FFF1BF; }
+    .placa {
+      flex: none;
+      min-width: 58px;
+      padding: 6px 8px;
+      font-size: 13px;
+      font-weight: 800;
+      font-stretch: 110%;
+      text-align: center;
+      color: #fff;
+      background: var(--tinta);
+      border-radius: 6px;
+    }
+    .placa.cat-servicio { background: var(--servicio); }
+    .fila .n { display: block; font-weight: 600; }
+    .fila .m { display: block; font-size: 13px; color: var(--tinta-suave); }
+    .vacio { padding: 10px; color: var(--tinta-suave); }
+
+    .nota { margin: 22px 0 0; font-size: 12.5px; color: var(--tinta-suave); }
+
+    /* ---------- Mapa ---------- */
+    .campus { fill: var(--suelo); stroke: var(--tinta); stroke-width: 0.35; stroke-dasharray: 1.4 1; }
+    .edificio { fill: #fff; stroke: #AFBDCB; stroke-width: 0.35; }
+    .patio { fill: var(--patio); }
+    .pasillo { fill: none; stroke: var(--pasillo); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+    .junta { fill: #A9B8C6; }
+    .lbl {
+      font-size: var(--fs, 1.6px);
+      font-weight: 600;
+      fill: var(--tinta);
+      paint-order: stroke;
+      stroke: #fff;
+      stroke-width: 0.7px;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+    .lbl.suave { font-size: calc(var(--fs, 1.6px) * 0.85); fill: #6B7C8F; font-weight: 700; stroke: none; }
+    .ruta-casing, .ruta-nucleo { fill: none; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+    .ruta-casing { stroke: var(--tinta); stroke-width: 3.4; }
+    .ruta-nucleo { stroke: var(--ruta); stroke-width: 1.9; }
+    .estacion { fill: #fff; stroke: var(--tinta); stroke-width: 0.7; pointer-events: none; }
+
+    .nodo-aula { cursor: pointer; }
+    .nodo-aula .hit { fill: transparent; }
+    .nodo-aula .punto { fill: #fff; stroke: var(--tinta); stroke-width: 0.7; transition: fill .15s; }
+    .nodo-aula.cat-servicio .punto { stroke: var(--servicio); }
+    .nodo-aula:hover .punto { fill: #FFF1BF; }
+    .nodo-aula.destino .punto { fill: var(--ruta); stroke: var(--tinta); stroke-width: 0.9; }
+    .nodo-aula:focus-visible { outline: none; }
+    .nodo-aula:focus-visible .punto { stroke: var(--usted); stroke-width: 1.2; }
+    .entrada { fill: var(--tinta); }
+
+    .usted-punto { fill: var(--usted); stroke: #fff; stroke-width: 0.8; }
+    .usted-pulso {
+      fill: var(--usted);
+      opacity: 0;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: pulso 1.8s ease-out 3;
+    }
+    @keyframes pulso {
+      from { opacity: 0.45; transform: scale(1); }
+      to { opacity: 0; transform: scale(3.2); }
+    }
+
+    .pista, .leyenda {
+      position: absolute;
+      margin: 0;
+      padding: 8px 12px;
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 8px;
+      pointer-events: none;
+    }
+    .pista { top: 14px; left: 14px; }
+    .pista.oculta { display: none; }
+    .leyenda { right: 14px; bottom: 14px; display: grid; gap: 6px; }
+    .leyenda span { display: flex; align-items: center; gap: 8px; }
+    .leyenda i { display: inline-block; width: 22px; height: 0; }
+    .l-usted { height: 10px !important; width: 10px !important; background: var(--usted); border-radius: 50%; margin: 0 6px; }
+    .l-ruta { height: 6px !important; background: var(--ruta); border: 2px solid var(--tinta); border-radius: 4px; box-sizing: content-box; }
+    .l-limite { border-top: 2px dashed var(--tinta); }
+
+    /* ---------- Movil ---------- */
+    @media (max-width: 860px) {
+      .app { display: flex; flex-direction: column; height: auto; }
+      .mapa-wrap { order: -1; flex: none; position: sticky; top: 0; z-index: 5; aspect-ratio: 116 / 86; max-height: 46dvh; border-bottom: 1px solid var(--linea); }
+      .panel { overflow: visible; border-right: 0; padding: 18px 16px 28px; }
+      .leyenda { display: none; }
+      .pista { top: 8px; left: 8px; font-size: 12px; padding: 6px 10px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .usted-pulso { animation: none; }
+      * { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <main class="panel">
+      <div class="marca">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="#14213D"/>
+          <path d="M8 23H16V10H24" fill="none" stroke="#FFC21A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="8" cy="23" r="2.6" fill="#2F6BFF" stroke="#fff" stroke-width="1.4"/>
+        </svg>
+        <span>MiMundoUPN</span>
+      </div>
+
+      <div class="campo">
+        <label for="origen">Sales desde</label>
+        <select id="origen"></select>
+        <p class="ayuda">También puedes tocar un punto del mapa.</p>
+      </div>
+
+      <form class="campo" id="form-buscar" autocomplete="off">
+        <label for="buscar">¿A dónde vas?</label>
+        <div class="fila-buscar">
+          <input id="buscar" type="search" placeholder="Código o nombre, por ejemplo 301-A">
+          <button class="boton" type="submit">Generar ruta</button>
+        </div>
+      </form>
+
+      <div id="resultado" aria-live="polite"></div>
+
+      <div class="lista-cab">
+        <h2>Ambientes registrados</h2>
+        <span id="conteo"></span>
+      </div>
+      <ul id="lista"></ul>
+
+      <p class="nota">Mapa de demostración: los ambientes y las distancias son datos de prueba.</p>
+    </main>
+
+    <section class="mapa-wrap" aria-label="Mapa del campus">
+      <svg id="mapa" viewBox="-8 -8 116 86" preserveAspectRatio="xMidYMid meet" role="application" aria-label="Mapa interactivo. Toca un punto para elegir dónde sales."></svg>
+      <p class="pista" id="pista">Toca el mapa para cambiar tu punto de partida.</p>
+      <div class="leyenda" aria-hidden="true">
+        <span><i class="l-usted"></i>Tu punto de partida</span>
+        <span><i class="l-ruta"></i>Ruta más corta</span>
+        <span><i class="l-limite"></i>Límite del campus</span>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // BOUNDARY (lado frontend): recoge lo que el usuario elige, llama al backend
+    // y pinta la respuesta. No calcula rutas: eso es trabajo de la capa Control.
+    const API = location.protocol === 'file:' ? 'http://localhost:3000' : '';
+    const NS = 'http://www.w3.org/2000/svg';
+    const VISTA = { w: 116, h: 86 };
+
+    // Decoracion del plano (no viene del backend)
+    const EDIFICIOS = [
+      { nombre: 'Bloque A', x: 10, y: 8, w: 62, h: 42 },
+      { nombre: 'Bloque B', x: 74, y: 28, w: 26, h: 36 },
+    ];
+
+    const estado = { mapa: null, aulas: [], origen: { x: 0, y: 0 }, destino: null };
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const norm = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    const sinAnimacion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    async function pedir(url, opciones) {
+      const res = await fetch(API + url, opciones);
+      return { ok: res.ok, data: await res.json() };
+    }
+
+    /* ---------- Arranque ---------- */
+    async function iniciar() {
+      try {
+        const [mapa, aulas] = await Promise.all([pedir('/api/mapa'), pedir('/api/aulas')]);
+        if (!mapa.ok || !aulas.ok) throw new Error('respuesta no valida');
+        estado.mapa = mapa.data;
+        estado.aulas = aulas.data;
+      } catch (e) {
+        mostrarError('No hay conexión con el servidor',
+          'Abre una terminal en la carpeta del proyecto, ejecuta npm start y recarga esta página.');
+        return;
+      }
+      const entrada = estado.mapa.nodos.find((n) => n.tipo === 'ingreso') || estado.mapa.nodos[0];
+      estado.origen = { x: entrada.x, y: entrada.y };
+      llenarOrigen(entrada.id);
+      dibujarMapa();
+      pintarLista();
+      ajustarEtiquetas();
+    }
+
+    /* ---------- Mapa ---------- */
+    function dibujarMapa() {
+      const { nodos, aristas, limites } = estado.mapa;
+      const porId = new Map(nodos.map((n) => [n.id, n]));
+      const aulaPorNodo = new Map(estado.aulas.map((a) => [a.nodoId, a]));
+      const patio = nodos.find((n) => n.tipo === 'patio');
+      let s = '';
+
+      s += `<rect class="campus" x="${limites.xMin}" y="${limites.yMin}" width="${limites.xMax - limites.xMin}" height="${limites.yMax - limites.yMin}" rx="2.5"/>`;
+      if (patio) s += `<ellipse class="patio" cx="${patio.x}" cy="${patio.y}" rx="11" ry="7.5"/>`;
+      EDIFICIOS.forEach((e) => { s += `<rect class="edificio" x="${e.x}" y="${e.y}" width="${e.w}" height="${e.h}" rx="1.5"/>`; });
+
+      aristas.forEach((a) => {
+        const o = porId.get(a.origenId), d = porId.get(a.destinoId);
+        s += `<line class="pasillo" x1="${o.x}" y1="${o.y}" x2="${d.x}" y2="${d.y}"/>`;
+      });
+
+      EDIFICIOS.forEach((e) => { s += `<text class="lbl suave" x="${e.x + 2}" y="${e.y + 2}" dominant-baseline="hanging">${esc(e.nombre)}</text>`; });
+      // la etiqueta va debajo del pasillo para que la ruta no la tape
+      if (patio) s += `<text class="lbl suave" x="${patio.x - 3}" y="${patio.y + 3.4}" text-anchor="middle" dominant-baseline="hanging">${esc(patio.nombre)}</text>`;
+
+      s += '<g id="capa-ruta"></g>';
+
+      nodos.forEach((n) => {
+        const aula = aulaPorNodo.get(n.id);
+        if (aula) {
+          const etiqueta = aula.categoria === 'Servicio' ? aula.nombre : aula.codigo;
+          s += `<g class="nodo-aula cat-${norm(aula.categoria)}" data-codigo="${esc(aula.codigo)}" tabindex="0" role="button"
+                  aria-label="Ir a ${esc(aula.nombre)}, ${esc(aula.codigo)}" transform="translate(${n.x} ${n.y})">
+                  <circle class="hit" r="4"/><circle class="punto" r="2.1"/>
+                  <text class="lbl" y="3.1" text-anchor="middle" dominant-baseline="hanging">${esc(etiqueta)}</text></g>`;
+        } else if (n.tipo === 'ingreso') {
+          s += `<rect class="entrada" x="${n.x - 1.8}" y="${n.y - 1.8}" width="3.6" height="3.6" rx="0.8"/>
+                <text class="lbl" x="${n.x}" y="${n.y + 3}" text-anchor="middle" dominant-baseline="hanging">Entrada</text>`;
+        } else if (n.tipo === 'pasillo') {
+          s += `<circle class="junta" cx="${n.x}" cy="${n.y}" r="0.8"/>`;
+        }
+      });
+
+      s += `<g id="capa-origen"><circle class="usted-pulso" r="1.8"/><circle class="usted-punto" r="1.7"/></g>`;
+      $('mapa').innerHTML = s;
+      moverOrigen();
+    }
+
+    function moverOrigen() {
+      const g = $('capa-origen');
+      if (!g) return;
+      g.setAttribute('transform', `translate(${estado.origen.x} ${estado.origen.y})`);
+      const pulso = g.querySelector('.usted-pulso');
+      pulso.style.animation = 'none';
+      void pulso.getBoundingClientRect();
+      pulso.style.animation = '';
+    }
+
+    function dibujarRuta(ruta) {
+      const capa = $('capa-ruta');
+      capa.innerHTML = '';
+      document.querySelectorAll('.nodo-aula.destino').forEach((g) => g.classList.remove('destino'));
+      if (!ruta) return;
+
+      if (ruta.length >= 2) {
+        const d = ruta.map((p, i) => `${i ? 'L' : 'M'}${p.x} ${p.y}`).join(' ');
+        const estaciones = ruta.slice(1, -1).map((p) => `<circle class="estacion" cx="${p.x}" cy="${p.y}" r="1.1"/>`).join('');
+        capa.innerHTML = `<path class="ruta-casing" d="${d}"/><path class="ruta-nucleo" d="${d}"/>${estaciones}`;
+
+        if (!sinAnimacion()) {
+          capa.querySelectorAll('path').forEach((p) => {
+            const largo = p.getTotalLength();
+            p.style.strokeDasharray = `${largo} ${largo}`;
+            p.style.strokeDashoffset = largo;
+            void p.getBoundingClientRect();
+            p.style.transition = 'stroke-dashoffset .9s cubic-bezier(.4, 0, .2, 1)';
+            p.style.strokeDashoffset = 0;
+          });
+          capa.querySelectorAll('.estacion').forEach((c, i, todas) => {
+            c.style.opacity = 0;
+            c.style.transition = `opacity .2s ease ${0.9 * (i + 1) / (todas.length + 1)}s`;
+            requestAnimationFrame(() => { c.style.opacity = 1; });
+          });
+        }
+      }
+    }
+
+    function resaltarDestino(codigo) {
+      document.querySelectorAll('.nodo-aula').forEach((g) => g.classList.toggle('destino', g.dataset.codigo === codigo));
+    }
+
+    // Las etiquetas del mapa miden siempre ~12 px en pantalla, sin importar el zoom
+    function ajustarEtiquetas() {
+      const svg = $('mapa');
+      const pxPorUnidad = Math.min(svg.clientWidth / VISTA.w, svg.clientHeight / VISTA.h);
+      if (!pxPorUnidad) return;
+      const objetivo = window.innerWidth <= 860 ? 10 : 12.5;
+      svg.style.setProperty('--fs', (objetivo / pxPorUnidad).toFixed(2) + 'px');
+    }
+    new ResizeObserver(ajustarEtiquetas).observe($('mapa'));
+
+    /* ---------- Punto de partida ---------- */
+    function llenarOrigen(idInicial) {
+      const opciones = estado.mapa.nodos.map((n) => `<option value="${n.id}">${esc(n.nombre)}</option>`).join('');
+      $('origen').innerHTML = opciones + '<option value="mapa" hidden>Punto elegido en el mapa</option>';
+      $('origen').value = String(idInicial);
+    }
+
+    $('origen').addEventListener('change', (e) => {
+      const nodo = estado.mapa.nodos.find((n) => String(n.id) === e.target.value);
+      if (!nodo) return;
+      fijarOrigen(nodo.x, nodo.y, false);
+    });
+
+    $('mapa').addEventListener('click', (e) => {
+      if (!estado.mapa || e.target.closest('.nodo-aula')) return;
+      const svg = $('mapa');
+      const punto = svg.createSVGPoint();
+      punto.x = e.clientX;
+      punto.y = e.clientY;
+      const p = punto.matrixTransform(svg.getScreenCTM().inverse());
+      $('pista').classList.add('oculta');
+      fijarOrigen(Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10, true);
+    });
+
+    function fijarOrigen(x, y, desdeMapa) {
+      estado.origen = { x, y };
+      if (desdeMapa) $('origen').value = 'mapa';
+      moverOrigen();
+      if (estado.destino || $('buscar').value.trim()) generar();
+    }
+
+    /* ---------- Busqueda y lista ---------- */
+    function coincidencias() {
+      const q = norm($('buscar').value);
+      // Si el texto es solo el codigo del destino elegido, se muestra la lista completa
+      if (!q || (estado.destino && q === norm(estado.destino))) return estado.aulas;
+      return estado.aulas.filter((a) => norm(`${a.codigo} ${a.nombre} ${a.bloque} ${a.categoria}`).includes(q));
+    }
+
+    function pintarLista() {
+      const items = coincidencias();
+      $('conteo').textContent = items.length === estado.aulas.length
+        ? `${items.length} ambientes`
+        : `${items.length} de ${estado.aulas.length}`;
+      $('lista').innerHTML = items.length
+        ? items.map((a) => {
+            const meta = a.bloque + (a.piso ? `, piso ${a.piso}` : '');
+            return `<li><button type="button" class="fila ${a.codigo === estado.destino ? 'activa' : ''}" data-codigo="${esc(a.codigo)}">
+                      <span class="placa cat-${norm(a.categoria)}">${esc(a.codigo)}</span>
+                      <span><span class="n">${esc(a.nombre)}</span><span class="m">${esc(meta)}</span></span>
+                    </button></li>`;
+          }).join('')
+        : `<li class="vacio">Ningún ambiente coincide con “${esc($('buscar').value.trim())}”. Pulsa Generar ruta y el sistema comprobará si existe.</li>`;
+    }
+
+    $('buscar').addEventListener('input', () => {
+      estado.destino = null;
+      pintarLista();
+    });
+
+    $('lista').addEventListener('click', (e) => {
+      const fila = e.target.closest('.fila');
+      if (fila) seleccionar(fila.dataset.codigo);
+    });
+
+    $('mapa').addEventListener('keydown', (e) => {
+      const nodo = e.target.closest && e.target.closest('.nodo-aula');
+      if (nodo && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        seleccionar(nodo.dataset.codigo);
+      }
+    });
+    $('mapa').addEventListener('click', (e) => {
+      const nodo = e.target.closest('.nodo-aula');
+      if (nodo) seleccionar(nodo.dataset.codigo);
+    });
+
+    $('form-buscar').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const texto = $('buscar').value.trim();
+      if (!texto) {
+        mostrarError('Falta el destino', 'Escribe un código o nombre, o elige un ambiente de la lista.');
+        $('buscar').focus();
+        return;
+      }
+      // Coincidencia exacta o unica: se usa ese ambiente. Si no hay ninguna, se envia
+      // tal cual y el backend responde que el aula no existe.
+      const q = norm(texto);
+      const exacta = estado.aulas.find((a) => norm(a.codigo) === q || norm(a.nombre) === q);
+      const unica = coincidencias().length === 1 ? coincidencias()[0] : null;
+      estado.destino = (exacta || unica) ? (exacta || unica).codigo : null;
+      if (estado.destino) $('buscar').value = estado.destino;
+      pintarLista();
+      generar();
+    });
+
+    function seleccionar(codigo) {
+      estado.destino = codigo;
+      $('buscar').value = codigo;
+      pintarLista();
+      generar();
+    }
+
+    /* ---------- Generar la ruta (HU01) ---------- */
+    async function generar() {
+      const codigo = estado.destino || $('buscar').value.trim();
+      if (!codigo) return;
+      let respuesta;
+      try {
+        respuesta = await pedir('/api/rutas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ origenX: estado.origen.x, origenY: estado.origen.y, codigoAulaDestino: codigo }),
+        });
+      } catch (e) {
+        dibujarRuta(null);
+        mostrarError('No hay conexión con el servidor', 'Ejecuta npm start en la carpeta del proyecto y vuelve a intentarlo.');
+        return;
+      }
+      const data = respuesta.data;
+      if (data.error) {
+        dibujarRuta(null);
+        const sugerencia = {
+          AULA_NO_ENCONTRADA: ['No encontramos ese ambiente', 'Revisa el código o elige uno de la lista.'],
+          FUERA_DE_RANGO: ['Estás fuera del campus', 'Toca un punto dentro del límite punteado o elige otro punto de partida.'],
+          SIN_RUTA: ['No hay camino disponible', 'Prueba con otro punto de partida.'],
+          UBICACION_INVALIDA: ['No sabemos desde dónde sales', 'Elige un punto de partida de la lista o toca el mapa.'],
+        }[data.error] || ['No se pudo generar la ruta', ''];
+        mostrarError(sugerencia[0], `${data.mensaje} ${sugerencia[1]}`.trim());
+        return;
+      }
+      estado.destino = data.aula.codigo;
+      $('pista').classList.add('oculta');
+      pintarLista();
+      dibujarRuta(data.ruta);
+      resaltarDestino(data.aula.codigo);
+      mostrarResultado(data);
+    }
+
+    /* ---------- Resultado ---------- */
+    function mostrarResultado(data) {
+      const ultima = data.ruta.length - 1;
+      let html;
+      if (data.distanciaTotal === 0) {
+        html = `<h2 class="res-titulo">Ya estás aquí</h2><p class="res-sub">Tu punto de partida es ${esc(data.aula.nombre)}.</p>`;
+      } else {
+        const paradas = data.ruta.map((p, i) => {
+          const clase = i === 0 ? 'inicio' : i === ultima ? 'fin' : '';
+          const placa = i === ultima ? `<span class="placa cat-${norm(data.aula.categoria)}">${esc(data.aula.codigo)}</span>` : '';
+          const tramo = i < ultima ? `<span class="tramo">${data.tramos[i].metros} m</span>` : '';
+          return `<li class="${clase}"><span class="parada"></span><span class="nombre">${esc(p.nombre)}${placa}</span>${tramo}</li>`;
+        }).join('');
+        html = `<h2 class="res-titulo">Llegas en ${data.minutos} min</h2>
+                <p class="res-sub">${data.distanciaTotal} m hasta ${esc(data.aula.nombre)}</p>
+                <ol class="linea">${paradas}</ol>`;
+      }
+      $('resultado').innerHTML = html;
+      if (window.innerWidth > 860) $('resultado').scrollIntoView({ block: 'nearest' });
+    }
+
+    function mostrarError(titulo, mensaje) {
+      $('resultado').innerHTML = `<div class="error"><strong>${esc(titulo)}</strong><p>${esc(mensaje)}</p></div>`;
+    }
+
+    iniciar();
+  </script>
+</body>
+</html>
