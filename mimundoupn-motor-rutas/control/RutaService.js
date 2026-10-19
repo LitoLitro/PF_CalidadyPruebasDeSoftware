@@ -44,7 +44,7 @@ function dijkstra(nodos, aristas, origenId, destinoId) {
     }
   }
 
-  if (distancias[destinoId] === Infinity) return null; 
+  if (!Number.isFinite(distancias[destinoId])) return null;
 
   const ruta = [];
   let paso = destinoId;
