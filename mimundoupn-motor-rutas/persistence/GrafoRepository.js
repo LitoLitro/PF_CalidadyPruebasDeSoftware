@@ -30,10 +30,10 @@ const nodos = [
   new Nodo(8, 'Biblioteca', 18, 36, 'servicio'),
   new Nodo(9, 'Cafetería', 62, 56, 'servicio'),
   new Nodo(10, 'Pasillo Bloque B', 80, 56, 'pasillo'),
-  new Nodo(11, 'Aula 101-B', 80, 38, 'aula'),
-  new Nodo(12, 'Aula 102-B', 94, 38, 'aula'),
+  new Nodo(11, 'Aula B101', 80, 38, 'aula'),
+  new Nodo(12, 'Aula B102', 94, 38, 'aula'),
   new Nodo(13, 'Auditorio', 94, 58, 'servicio'),
-  new Nodo(14, 'Aula 201-A', 64, 36, 'aula'),
+  new Nodo(14, 'Aula A201', 64, 36, 'aula'),
 ];
 
 // --- Aristas: tramos transitables. El peso (metros) se calcula con la
@@ -53,11 +53,11 @@ const aristas = [
 
 // --- Ambientes registrados (codigo, nombre, nodoId, bloque, piso, categoria) ---
 const aulas = [
-  new Aula('301-A', 'Laboratorio de Redes', 6, 'Bloque A', 3, 'Laboratorio'),
-  new Aula('302-A', 'Laboratorio de Software', 7, 'Bloque A', 3, 'Laboratorio'),
-  new Aula('201-A', 'Aula 201', 14, 'Bloque A', 2, 'Aula'),
-  new Aula('101-B', 'Aula 101', 11, 'Bloque B', 1, 'Aula'),
-  new Aula('102-B', 'Aula 102', 12, 'Bloque B', 1, 'Aula'),
+  new Aula('A301', 'Laboratorio de Redes', 6, 'Bloque A', 3, 'Laboratorio'),
+  new Aula('A302', 'Laboratorio de Software', 7, 'Bloque A', 3, 'Laboratorio'),
+  new Aula('A201', 'Aula 201', 14, 'Bloque A', 2, 'Aula'),
+  new Aula('B101', 'Aula 101', 11, 'Bloque B', 1, 'Aula'),
+  new Aula('B102', 'Aula 102', 12, 'Bloque B', 1, 'Aula'),
   new Aula('BIB', 'Biblioteca', 8, 'Bloque A', 1, 'Servicio'),
   new Aula('CAF', 'Cafetería', 9, 'Patio central', null, 'Servicio'),
   new Aula('AUD', 'Auditorio', 13, 'Bloque B', 1, 'Servicio'),
