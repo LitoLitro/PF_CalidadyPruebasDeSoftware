@@ -1,95 +1,145 @@
-/**
- * PERSISTENCIA
- * Por ahora usa datos de prueba en memoria, tal como se definio en el punto 3
- * del informe ("datos de prueba minimos para validar el flujo principal").
- *
- * IMPORTANTE: el plano, los ambientes y las distancias de este archivo son
- * DE DEMOSTRACION. Reemplazalos por los reales de tu campus (por ejemplo,
- * digitalizandolos desde el prototipo de Figma).
- *
- * Cuando conectes SQL Server de verdad, cambias la IMPLEMENTACION interna de
- * estos metodos (usando el paquete "mssql"), pero no su firma: la capa de
- * Control nunca se entera de donde vienen los datos.
- */
+const sql = require('mssql');
 const Nodo = require('../entity/Nodo');
 const Arista = require('../entity/Arista');
 const Aula = require('../entity/Aula');
 
-// Cada unidad del plano equivale a 2 metros (el plano mide 100 x 70 unidades).
-const METROS_POR_UNIDAD = 2;
+// CONFIGURACIÓN DE TU BASE DE DATOS LOCAL
+const dbConfig = {
+  user: 'sa', // Cambia esto si usas otro usuario
+  password: 'Admin2026', // <--- CAMBIA ESTO por tu contraseña real
+  server: 'DESKTOP-P8C0ROV', // O el nombre de tu instancia
+  port: 1433, // Puerto por defecto de SQL Server
+  database: 'BDGeolo',
+  options: {
+    encrypt: false,
+    trustServerCertificate: true
+  }
+};
 
-// --- Nodos: puntos del grafo (id, nombre, x, y, tipo) ---
-const nodos = [
-  new Nodo(1, 'Entrada principal', 8, 56, 'ingreso'),
-  new Nodo(2, 'Hall de ingreso', 22, 56, 'pasillo'),
-  new Nodo(3, 'Patio central', 46, 56, 'patio'),
-  new Nodo(4, 'Pasillo Bloque A', 46, 36, 'pasillo'),
-  new Nodo(5, 'Escalera A', 46, 18, 'pasillo'),
-  new Nodo(6, 'Laboratorio de Redes', 64, 18, 'aula'),
-  new Nodo(7, 'Laboratorio de Software', 28, 18, 'aula'),
-  new Nodo(8, 'Biblioteca', 18, 36, 'servicio'),
-  new Nodo(9, 'Cafetería', 62, 56, 'servicio'),
-  new Nodo(10, 'Pasillo Bloque B', 80, 56, 'pasillo'),
-  new Nodo(11, 'Aula B101', 80, 38, 'aula'),
-  new Nodo(12, 'Aula B102', 94, 38, 'aula'),
-  new Nodo(13, 'Auditorio', 94, 58, 'servicio'),
-  new Nodo(14, 'Aula A201', 64, 36, 'aula'),
-];
-
-// --- Aristas: tramos transitables. El peso (metros) se calcula con la
-// distancia entre los dos nodos, para que plano y distancias no se contradigan.
-function conectar(idA, idB) {
-  const a = nodos.find((n) => n.id === idA);
-  const b = nodos.find((n) => n.id === idB);
-  const metros = Math.round(Math.hypot(a.x - b.x, a.y - b.y) * METROS_POR_UNIDAD);
-  return new Arista(idA, idB, metros);
-}
-
-const aristas = [
-  [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [5, 7],
-  [4, 8], [2, 8], [3, 9], [9, 10], [10, 11], [11, 12],
-  [10, 13], [12, 13], [4, 14],
-].map(([a, b]) => conectar(a, b));
-
-// --- Ambientes registrados (codigo, nombre, nodoId, bloque, piso, categoria) ---
-const aulas = [
-  new Aula('A301', 'Laboratorio de Redes', 6, 'Bloque A', 3, 'Laboratorio'),
-  new Aula('A302', 'Laboratorio de Software', 7, 'Bloque A', 3, 'Laboratorio'),
-  new Aula('A201', 'Aula 201', 14, 'Bloque A', 2, 'Aula'),
-  new Aula('B101', 'Aula 101', 11, 'Bloque B', 1, 'Aula'),
-  new Aula('B102', 'Aula 102', 12, 'Bloque B', 1, 'Aula'),
-  new Aula('BIB', 'Biblioteca', 8, 'Bloque A', 1, 'Servicio'),
-  new Aula('CAF', 'Cafetería', 9, 'Patio central', null, 'Servicio'),
-  new Aula('AUD', 'Auditorio', 13, 'Bloque B', 1, 'Servicio'),
-];
-
-// Limite del area que el sistema cubre (criterio de aceptacion "fuera de rango")
+// Límites del plano (los mantenemos fijos para validar el "fuera de rango")
 const LIMITES_CAMPUS = { xMin: 0, xMax: 100, yMin: 0, yMax: 70 };
 
 class GrafoRepository {
   constructor() {
-    this.METROS_POR_UNIDAD = METROS_POR_UNIDAD;
+    this.METROS_POR_UNIDAD = 2; // Ya no se usará para calcular distancias reales
   }
 
-  obtenerNodos() {
-    return nodos;
+  // 1. Obtener Nodos (Aulas, pasillos, servicios) desde SQL Server
+  async obtenerNodos() {
+    try {
+      const pool = await sql.connect(dbConfig);
+      // Mapeamos latitud/longitud a x/y para que tu Dijkstra siga funcionando
+      const result = await pool.request().query(`
+        SELECT 
+          espacioId AS id, 
+          nombre, 
+          longitud AS x, 
+          latitud AS y, 
+          tipoEspacioId AS tipo 
+        FROM ESPACIO 
+        WHERE estado = 1
+      `);
+      
+      return result.recordset.map(r => new Nodo(r.id, r.nombre, r.x, r.y, r.tipo.toString()));
+    } catch (error) {
+      console.error("Error al obtener nodos:", error);
+      return [];
+    }
   }
 
-  obtenerAristas() {
+  // 2. Obtener Aristas (Conexiones)
+  async obtenerAristas() {
+    // Como tu BD no tiene una tabla de "pasillos" o "conexiones", 
+    // crearemos un grafo completo (todos conectados con todos) 
+    // y calcularemos la distancia en metros.
+    const nodos = await this.obtenerNodos();
+    const aristas = [];
+
+    for (let i = 0; i < nodos.length; i++) {
+      for (let j = i + 1; j < nodos.length; j++) {
+        const a = nodos[i];
+        const b = nodos[j];
+        
+        // Fórmula de Haversine (distancia real en metros entre coordenadas)
+        const R = 6371000; // Radio de la Tierra en metros
+        const dLat = (b.y - a.y) * Math.PI / 180;
+        const dLon = (b.x - a.x) * Math.PI / 180;
+        const lat1 = a.y * Math.PI / 180;
+        const lat2 = b.y * Math.PI / 180;
+
+        const hav = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1) * Math.cos(lat2) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+        const metros = Math.round(R * 2 * Math.atan2(Math.sqrt(hav), Math.sqrt(1-hav)));
+
+        aristas.push(new Arista(a.id, b.id, metros));
+      }
+    }
     return aristas;
   }
 
-  obtenerAulas() {
-    return aulas;
+  // 3. Obtener Aulas
+  async obtenerAulas() {
+    try {
+      const pool = await sql.connect(dbConfig);
+      // Hacemos JOIN con PABELLON y TIPO_ESPACIO
+      const result = await pool.request().query(`
+        SELECT 
+          e.codigo, 
+          e.nombre, 
+          e.espacioId AS nodoId, 
+          p.nombre AS bloque, 
+          e.piso, 
+          t.nombre AS categoria
+        FROM ESPACIO e
+        INNER JOIN PABELLON p ON e.pabellonId = p.pabellonId
+        INNER JOIN TIPO_ESPACIO t ON e.tipoEspacioId = t.tipoEspacioId
+        WHERE e.estado = 1
+      `);
+
+      return result.recordset.map(r => 
+        new Aula(r.codigo, r.nombre, r.nodoId, r.bloque, r.piso, r.categoria)
+      );
+    } catch (error) {
+      console.error("Error al obtener aulas:", error);
+      return [];
+    }
   }
 
-  obtenerAulaPorCodigo(codigo) {
-    const buscado = String(codigo === undefined || codigo === null ? '' : codigo)
-      .trim()
-      .toUpperCase();
-    return aulas.find((a) => a.codigo.toUpperCase() === buscado) || null;
+  // 4. Buscar un aula específica por su código (A101, etc.)
+  async obtenerAulaPorCodigo(codigo) {
+    try {
+      const buscado = String(codigo || '').trim().toUpperCase();
+      const pool = await sql.connect(dbConfig);
+      
+      const result = await pool.request()
+        .input('codigo', sql.VarChar, buscado)
+        .query(`
+          SELECT 
+            e.codigo, 
+            e.nombre, 
+            e.espacioId AS nodoId, 
+            p.nombre AS bloque, 
+            e.piso, 
+            t.nombre AS categoria
+          FROM ESPACIO e
+          INNER JOIN PABELLON p ON e.pabellonId = p.pabellonId
+          INNER JOIN TIPO_ESPACIO t ON e.tipoEspacioId = t.tipoEspacioId
+          WHERE e.estado = 1 AND UPPER(e.codigo) = @codigo
+        `);
+
+      if (result.recordset.length > 0) {
+        const r = result.recordset[0];
+        return new Aula(r.codigo, r.nombre, r.nodoId, r.bloque, r.piso, r.categoria);
+      }
+      return null;
+    } catch (error) {
+      console.error("Error al buscar aula por código:", error);
+      return null;
+    }
   }
 
+  // 5. Límites del campus (se mantienen fijos para validar el "fuera de rango")
   obtenerLimites() {
     return LIMITES_CAMPUS;
   }
@@ -102,17 +152,6 @@ class GrafoRepository {
       y <= LIMITES_CAMPUS.yMax
     );
   }
-
-  // --- Cuando conectes SQL Server, los metodos de arriba quedarian asi: ---
-  //
-  // const sql = require('mssql');
-  // const config = { user: '...', password: '...', server: '...', database: 'MiMundoUPN' };
-  //
-  // async obtenerNodos() {
-  //   const pool = await sql.connect(config);
-  //   const result = await pool.request().query('SELECT id, nombre, x, y, tipo FROM Nodo');
-  //   return result.recordset.map((r) => new Nodo(r.id, r.nombre, r.x, r.y, r.tipo));
-  // }
 }
 
 module.exports = new GrafoRepository();

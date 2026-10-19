@@ -1,34 +1,24 @@
 /**
  * CONTROL
- * Prepara los datos del plano y del listado de ambientes para que la capa
- * Boundary los entregue al frontend. No dibuja nada: solo decide que datos
- * se exponen.
+ * Coordina la obtención de datos del mapa y la lista de aulas.
  */
 const grafoRepo = require('../persistence/GrafoRepository');
 
-function listarAulas() {
-  const nodos = grafoRepo.obtenerNodos();
-  return grafoRepo.obtenerAulas().map((a) => {
-    const nodo = nodos.find((n) => n.id === a.nodoId);
-    return {
-      codigo: a.codigo,
-      nombre: a.nombre,
-      bloque: a.bloque,
-      piso: a.piso,
-      categoria: a.categoria,
-      nodoId: a.nodoId,
-      x: nodo.x,
-      y: nodo.y,
-    };
-  });
+// 👇 Ahora es async porque el repositorio consulta SQL Server
+async function listarAulas() {
+  return await grafoRepo.obtenerAulas();
 }
 
-function obtenerMapa() {
+// 👇 Ahora es async porque debe obtener nodos y aristas de la BD
+async function obtenerMapa() {
+  const nodos = await grafoRepo.obtenerNodos();
+  const aristas = await grafoRepo.obtenerAristas();
+  const limites = grafoRepo.obtenerLimites(); // Este es síncrono, no necesita await
+
   return {
-    nodos: grafoRepo.obtenerNodos(),
-    aristas: grafoRepo.obtenerAristas(),
-    limites: grafoRepo.obtenerLimites(),
-    metrosPorUnidad: grafoRepo.METROS_POR_UNIDAD,
+    nodos,
+    aristas,
+    limites
   };
 }
 

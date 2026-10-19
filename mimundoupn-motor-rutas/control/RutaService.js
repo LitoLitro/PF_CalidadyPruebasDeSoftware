@@ -20,7 +20,6 @@ function dijkstra(nodos, aristas, origenId, destinoId) {
   distancias[origenId] = 0;
 
   while (visitados.size < nodos.length) {
-    // Elegir el nodo no visitado con menor distancia conocida
     let actual = null;
     let menor = Infinity;
     for (const n of nodos) {
@@ -29,7 +28,7 @@ function dijkstra(nodos, aristas, origenId, destinoId) {
         actual = n.id;
       }
     }
-    if (actual === null) break; // no quedan nodos alcanzables desde el origen
+    if (actual === null) break; 
     visitados.add(actual);
 
     const vecinos = aristas.filter(
@@ -45,9 +44,8 @@ function dijkstra(nodos, aristas, origenId, destinoId) {
     }
   }
 
-  if (distancias[destinoId] === Infinity) return null; // no hay camino posible
+  if (distancias[destinoId] === Infinity) return null; 
 
-  // Reconstruir la ruta desde el destino hasta el origen
   const ruta = [];
   let paso = destinoId;
   while (paso !== undefined) {
@@ -77,7 +75,8 @@ function esNumeroValido(valor) {
   return valor !== null && valor !== undefined && valor !== '' && Number.isFinite(Number(valor));
 }
 
-function generarRuta({ origenX, origenY, codigoAulaDestino }) {
+// 👇 1. Convertimos la función en ASÍNCRONA
+async function generarRuta({ origenX, origenY, codigoAulaDestino }) {
   if (!esNumeroValido(origenX) || !esNumeroValido(origenY)) {
     return {
       error: 'UBICACION_INVALIDA',
@@ -88,6 +87,7 @@ function generarRuta({ origenX, origenY, codigoAulaDestino }) {
   const y = Number(origenY);
 
   // Criterio de aceptacion: "fuera de rango"
+  // (Este método en el repo es síncrono, no necesita await)
   if (!grafoRepo.estaDentroDelCampus(x, y)) {
     return {
       error: 'FUERA_DE_RANGO',
@@ -95,8 +95,10 @@ function generarRuta({ origenX, origenY, codigoAulaDestino }) {
     };
   }
 
+  // 👇 2. Agregamos AWAIT a las consultas a la base de datos
+  const aula = await grafoRepo.obtenerAulaPorCodigo(codigoAulaDestino);
+  
   // Criterio de aceptacion: "aula no encontrada"
-  const aula = grafoRepo.obtenerAulaPorCodigo(codigoAulaDestino);
   if (!aula) {
     return {
       error: 'AULA_NO_ENCONTRADA',
@@ -104,8 +106,9 @@ function generarRuta({ origenX, origenY, codigoAulaDestino }) {
     };
   }
 
-  const nodos = grafoRepo.obtenerNodos();
-  const aristas = grafoRepo.obtenerAristas();
+  // 👇 3. Agregamos AWAIT a nodos y aristas
+  const nodos = await grafoRepo.obtenerNodos();
+  const aristas = await grafoRepo.obtenerAristas();
   const metrosPorUnidad = grafoRepo.METROS_POR_UNIDAD;
 
   const { nodo: origen, distancia: distanciaAlNodo } = nodoMasCercano(nodos, x, y);
