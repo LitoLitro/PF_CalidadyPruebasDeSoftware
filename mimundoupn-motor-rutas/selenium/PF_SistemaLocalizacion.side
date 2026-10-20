@@ -1,0 +1,253 @@
+{
+  "id": "5148f5d3-b008-48ec-a1d8-beada620fddc",
+  "version": "2.0",
+  "name": "PF_SistemaLocalizacion",
+  "url": "http://localhost:3000",
+  "tests": [{
+    "id": "ab415fe9-3bd3-4eeb-9922-34bbcd365418",
+    "name": "TC-01",
+    "commands": [{
+      "id": "5a9929b0-e46a-4725-929c-cf94faec0e27",
+      "comment": "",
+      "command": "open",
+      "target": "/",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "d45c9a1d-9a3c-4ea3-8214-a9ea005a5b44",
+      "comment": "",
+      "command": "setWindowSize",
+      "target": "1936x1056",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "c52b765f-c172-4ec6-8808-54e1ad65c988",
+      "comment": "",
+      "command": "click",
+      "target": "id=origen",
+      "targets": [
+        ["id=origen", "id"],
+        ["css=#origen", "css:finder"],
+        ["xpath=//select[@id='origen']", "xpath:attributes"],
+        ["xpath=//select", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "8d04c9ca-d67b-42ec-badf-d045c7b97b47",
+      "comment": "",
+      "command": "click",
+      "target": "css=.nodo-aula:nth-child(38) > .punto",
+      "targets": [
+        ["css=.nodo-aula:nth-child(38) > .punto", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "cb0207f8-2fc9-49ba-b5a0-2f0100361c20",
+      "comment": "",
+      "command": "select",
+      "target": "id=origen",
+      "targets": [],
+      "value": "label=Lab. Redes"
+    }, {
+      "id": "30767a68-ce59-4dca-a1b2-0397baed6aca",
+      "comment": "",
+      "command": "click",
+      "target": "css=option:nth-child(11)",
+      "targets": [
+        ["css=option:nth-child(11)", "css:finder"],
+        ["xpath=//option[@value='11']", "xpath:attributes"],
+        ["xpath=//select[@id='origen']/option[11]", "xpath:idRelative"],
+        ["xpath=//option[11]", "xpath:position"],
+        ["xpath=//option[contains(.,'Lab. Redes')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "5db8d055-0b29-4234-995b-183fbac79ee2",
+      "comment": "",
+      "command": "click",
+      "target": "css=.nodo-aula:nth-child(28) > .punto",
+      "targets": [
+        ["css=.nodo-aula:nth-child(28) > .punto", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "6ad64d86-c919-4d24-b466-6a0d6f507942",
+      "comment": "",
+      "command": "click",
+      "target": "css=.boton",
+      "targets": [
+        ["css=.boton", "css:finder"],
+        ["xpath=//button[@type='submit']", "xpath:attributes"],
+        ["xpath=//form[@id='form-buscar']/div/button", "xpath:idRelative"],
+        ["xpath=//button", "xpath:position"],
+        ["xpath=//button[contains(.,'Generar ruta')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }, {
+      "id": "49888f78-907b-4550-8b9b-5fcf2ae31d0a",
+      "comment": "",
+      "command": "click",
+      "target": "css=.boton",
+      "targets": [
+        ["css=.boton", "css:finder"],
+        ["xpath=//button[@type='submit']", "xpath:attributes"],
+        ["xpath=//form[@id='form-buscar']/div/button", "xpath:idRelative"],
+        ["xpath=//button", "xpath:position"],
+        ["xpath=//button[contains(.,'Generar ruta')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }]
+  }, {
+    "id": "fa63f420-1d8c-4df7-b926-b41b04cf20a9",
+    "name": "TC-02",
+    "commands": [{
+      "id": "4f03012c-4b6e-4a88-bfff-ce8807bdcd75",
+      "comment": "",
+      "command": "open",
+      "target": "/",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "79ae97c2-15d6-42a9-98fc-3c955d75b14d",
+      "comment": "",
+      "command": "setWindowSize",
+      "target": "1936x1056",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "cf799efb-37d3-4fab-864b-2361474207ea",
+      "comment": "",
+      "command": "click",
+      "target": "id=buscar",
+      "targets": [
+        ["id=buscar", "id"],
+        ["css=#buscar", "css:finder"],
+        ["xpath=//input[@id='buscar']", "xpath:attributes"],
+        ["xpath=//form[@id='form-buscar']/div/input", "xpath:idRelative"],
+        ["xpath=//input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "97a83916-8267-486a-bf57-20094660ff03",
+      "comment": "",
+      "command": "type",
+      "target": "id=buscar",
+      "targets": [
+        ["id=buscar", "id"],
+        ["css=#buscar", "css:finder"],
+        ["xpath=//input[@id='buscar']", "xpath:attributes"],
+        ["xpath=//form[@id='form-buscar']/div/input", "xpath:idRelative"],
+        ["xpath=//input", "xpath:position"]
+      ],
+      "value": "G804"
+    }, {
+      "id": "de59702f-6564-4000-bef0-5a22abb996e0",
+      "comment": "",
+      "command": "click",
+      "target": "css=.boton",
+      "targets": [
+        ["css=.boton", "css:finder"],
+        ["xpath=//button[@type='submit']", "xpath:attributes"],
+        ["xpath=//form[@id='form-buscar']/div/button", "xpath:idRelative"],
+        ["xpath=//button", "xpath:position"],
+        ["xpath=//button[contains(.,'Generar ruta')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }]
+  }, {
+    "id": "ee0308d2-c0fb-466a-aeef-f0c465d7cc1d",
+    "name": "TC-03",
+    "commands": [{
+      "id": "4bb1ed62-dae5-4cdc-959e-de385f644bcd",
+      "comment": "",
+      "command": "open",
+      "target": "/",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "ae234708-2007-461d-ba53-52c0b25eecf4",
+      "comment": "",
+      "command": "setWindowSize",
+      "target": "1936x1056",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "9bc936ff-9811-4af7-af8b-ae387e914989",
+      "comment": "",
+      "command": "click",
+      "target": "id=mapa",
+      "targets": [
+        ["id=mapa", "id"],
+        ["css=#mapa", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "7f99f2eb-5bad-4ddd-bc86-56acf33bafa9",
+      "comment": "",
+      "command": "click",
+      "target": "id=mapa",
+      "targets": [
+        ["id=mapa", "id"],
+        ["css=#mapa", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "68be6e21-5cf7-4d56-b40b-3ae00b06ee03",
+      "comment": "",
+      "command": "click",
+      "target": "id=mapa",
+      "targets": [
+        ["id=mapa", "id"],
+        ["css=#mapa", "css:finder"]
+      ],
+      "value": ""
+    }, {
+      "id": "2f4f6e62-d0c1-44cb-a97c-32d0e347eca5",
+      "comment": "",
+      "command": "click",
+      "target": "css=li:nth-child(11) > .fila",
+      "targets": [
+        ["css=li:nth-child(11) > .fila", "css:finder"],
+        ["xpath=(//button[@type='button'])[11]", "xpath:attributes"],
+        ["xpath=//ul[@id='lista']/li[11]/button", "xpath:idRelative"],
+        ["xpath=//li[11]/button", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "a9c5d963-2939-4a64-a1b8-9181210bb46a",
+      "comment": "",
+      "command": "mouseOver",
+      "target": "css=.activa",
+      "targets": [
+        ["css=.activa", "css:finder"],
+        ["xpath=(//button[@type='button'])[11]", "xpath:attributes"],
+        ["xpath=//ul[@id='lista']/li[11]/button", "xpath:idRelative"],
+        ["xpath=//li[11]/button", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "6f96a1b3-ec3f-4d5a-9e2d-e91215b22203",
+      "comment": "",
+      "command": "click",
+      "target": "css=.boton",
+      "targets": [
+        ["css=.boton", "css:finder"],
+        ["xpath=//button[@type='submit']", "xpath:attributes"],
+        ["xpath=//form[@id='form-buscar']/div/button", "xpath:idRelative"],
+        ["xpath=//button", "xpath:position"],
+        ["xpath=//button[contains(.,'Generar ruta')]", "xpath:innerText"]
+      ],
+      "value": ""
+    }]
+  }],
+  "suites": [{
+    "id": "6474727b-368f-4ae1-80aa-56609acc296b",
+    "name": "Default Suite",
+    "persistSession": false,
+    "parallel": false,
+    "timeout": 300,
+    "tests": ["ab415fe9-3bd3-4eeb-9922-34bbcd365418"]
+  }],
+  "urls": ["http://localhost:3000/"],
+  "plugins": []
+}

@@ -48,41 +48,43 @@ class GrafoRepository {
   }
 
   // 2. Obtener Aristas (Conexiones)
+    // 2. Obtener Aristas (Conexiones lógicas de pasillos)
   async obtenerAristas() {
-    // Como tu BD no tiene una tabla de "pasillos" o "conexiones", 
-    // crearemos un grafo completo (todos conectados con todos) 
-    // y calcularemos la distancia en metros.
     const nodos = await this.obtenerNodos();
     const aristas = [];
 
-    for (let i = 0; i < nodos.length; i++) {
-      for (let j = i + 1; j < nodos.length; j++) {
-        const a = nodos[i];
-        const b = nodos[j];
-        
-        // Fórmula de Haversine (distancia real en metros entre coordenadas)
-        const R = 6371000; // Radio de la Tierra en metros
-        const dLat = (b.y - a.y) * Math.PI / 180;
-        const dLon = (b.x - a.x) * Math.PI / 180;
-        const lat1 = a.y * Math.PI / 180;
-        const lat2 = b.y * Math.PI / 180;
+    // Buscamos los IDs del Patio y la Entrada para armar el grafo estrella
+    const idPatio = nodos.find(n => n.nombre.includes('Patio'))?.id;
+    const idEntrada = nodos.find(n => n.nombre.includes('Entrada'))?.id;
 
-        const hav = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat1) * Math.cos(lat2) *
-                    Math.sin(dLon/2) * Math.sin(dLon/2);
-        const metros = Math.round(R * 2 * Math.atan2(Math.sqrt(hav), Math.sqrt(1-hav)));
+    // Función auxiliar para calcular distancia euclidiana (plano)
+    const calcularDistancia = (idA, idB) => {
+      const a = nodos.find(n => n.id === idA);
+      const b = nodos.find(n => n.id === idB);
+      // Distancia en unidades del plano
+      const distUnidades = Math.hypot(b.x - a.x, b.y - a.y);
+      // Multiplicamos por 2 metros (según tu diseño original) y redondeamos
+      return Math.round(distUnidades * 2); 
+    };
 
-        aristas.push(new Arista(a.id, b.id, metros));
-      }
+    // 1. Conectar la Entrada con el Patio
+    if (idEntrada && idPatio) {
+      aristas.push(new Arista(idEntrada, idPatio, calcularDistancia(idEntrada, idPatio)));
     }
+
+    // 2. Conectar el Patio con todos los demás ambientes (Aulas, Labs, Servicios)
+    nodos.forEach(nodo => {
+      if (nodo.id !== idPatio && nodo.id !== idEntrada) {
+        aristas.push(new Arista(idPatio, nodo.id, calcularDistancia(idPatio, nodo.id)));
+      }
+    });
+
     return aristas;
   }
 
-  // 3. Obtener Aulas
   async obtenerAulas() {
     try {
       const pool = await sql.connect(dbConfig);
-      // Hacemos JOIN con PABELLON y TIPO_ESPACIO
       const result = await pool.request().query(`
         SELECT 
           e.codigo, 
@@ -106,7 +108,6 @@ class GrafoRepository {
     }
   }
 
-  // 4. Buscar un aula específica por su código (A101, etc.)
   async obtenerAulaPorCodigo(codigo) {
     try {
       const buscado = String(codigo || '').trim().toUpperCase();
@@ -139,7 +140,6 @@ class GrafoRepository {
     }
   }
 
-  // 5. Límites del campus (se mantienen fijos para validar el "fuera de rango")
   obtenerLimites() {
     return LIMITES_CAMPUS;
   }
