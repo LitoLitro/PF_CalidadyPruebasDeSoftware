@@ -5,11 +5,16 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test" : "jest"
+    "test": "jest"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
+    "dotenv": "^18.0.9",
     "express": "^4.19.2",
-    "mssql": "^10.0.5"
+    "express-session": "^1.19.0",
+    "msnodesqlv8": "^6.2.2",
+    "mssql": "^10.0.5",
+    "nodemailer": "^10.3.1"
   }
 }

@@ -1,0 +1,437 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiMundoUPN | Acceso</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background:
+                linear-gradient(rgba(10, 30, 60, .65), rgba(10, 30, 60, .65)),
+                url("https://www.upn.edu.pe/sites/default/files/sede/campus-los-olivos-02.10.webp")
+                center / cover no-repeat;
+        }
+
+        .contenedor {
+            width: 100%;
+            max-width: 440px;
+            padding: 35px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, .3);
+        }
+
+        h1 {
+            color: #123d69;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .subtitulo {
+            text-align: center;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .campo {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #263b50;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #ccd5df;
+            border-radius: 8px;
+            font-size: 15px;
+            background: white;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #1769aa;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #1769aa;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #104d80;
+        }
+
+        button:disabled {
+            opacity: .6;
+            cursor: wait;
+        }
+
+        .alternar {
+            margin-top: 18px;
+            text-align: center;
+            color: #1769aa;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .alternar:hover {
+            text-decoration: underline;
+        }
+
+        .oculto {
+            display: none;
+        }
+
+        #mensaje {
+            text-align: center;
+            min-height: 20px;
+            font-size: 14px;
+            margin-top: 15px;
+        }
+
+        .nota {
+            color: #777;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .ayuda {
+            color: #666;
+            font-size: 12px;
+            margin-top: 7px;
+        }
+
+        @media (max-width: 480px) {
+            .contenedor {
+                padding: 25px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="contenedor">
+
+        <h1>MiMundoUPN</h1>
+        <p class="subtitulo">Sistema de orientación universitaria</p>
+
+        <!-- INICIO DE SESIÓN -->
+        <section id="seccionLogin">
+
+            <form id="formLogin">
+
+                <div class="campo">
+                    <label for="tipoUsuario">Tipo de usuario</label>
+                    <select id="tipoUsuario" required>
+                        <option value="">Selecciona una opción</option>
+                        <option value="1">Estudiante</option>
+                        <option value="administrativo">
+                            Personal administrativo
+                        </option>
+                    </select>
+                </div>
+
+                <div class="campo">
+                    <label for="correo">Correo electrónico</label>
+                    <input
+                        type="email"
+                        id="correo"
+                        placeholder="Ingresa tu correo"
+                        autocomplete="username"
+                        required
+                    >
+                </div>
+
+                <div class="campo">
+                    <label for="contrasena">Contraseña</label>
+                    <input
+                        type="password"
+                        id="contrasena"
+                        placeholder="Ingresa tu contraseña"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+
+                <button type="submit" id="btnLogin">
+                    Iniciar sesión
+                </button>
+
+            </form>
+
+            <p class="alternar" id="irRegistro" role="button" tabindex="0">
+                ¿No tienes cuenta? Regístrate aquí
+            </p>
+
+        </section>
+
+        <!-- REGISTRO -->
+        <section id="seccionRegistro" class="oculto">
+
+            <form id="formRegistro">
+
+                <div class="campo">
+                    <label for="nombres">Nombres</label>
+                    <input
+                        type="text"
+                        id="nombres"
+                        placeholder="Ingresa tus nombres"
+                        maxlength="100"
+                        autocomplete="given-name"
+                        required
+                    >
+                </div>
+
+                <div class="campo">
+                    <label for="apellidos">Apellidos</label>
+                    <input
+                        type="text"
+                        id="apellidos"
+                        placeholder="Ingresa tus apellidos"
+                        maxlength="100"
+                        autocomplete="family-name"
+                        required
+                    >
+                </div>
+
+                <div class="campo">
+                    <label for="correoRegistro">Correo electrónico</label>
+                    <input
+                        type="email"
+                        id="correoRegistro"
+                        placeholder="Ingresa tu correo"
+                        maxlength="100"
+                        autocomplete="email"
+                        required
+                    >
+                </div>
+
+                <div class="campo">
+                    <label for="contrasenaRegistro">Contraseña</label>
+                    <input
+                        type="password"
+                        id="contrasenaRegistro"
+                        placeholder="Crea una contraseña"
+                        minlength="8"
+                        autocomplete="new-password"
+                        required
+                    >
+                    <p class="ayuda">
+                        La contraseña debe tener al menos 8 caracteres.
+                    </p>
+                </div>
+
+                <div class="campo">
+                    <label for="tipoRegistro">Tipo de usuario</label>
+                    <select id="tipoRegistro" required>
+                        <option value="1">Estudiante</option>
+                    </select>
+                    <p class="ayuda">
+                        Las cuentas administrativas requieren autorización.
+                    </p>
+                </div>
+
+                <button type="submit" id="btnRegistro">
+                    Crear cuenta
+                </button>
+
+            </form>
+
+            <p class="alternar" id="irLogin" role="button" tabindex="0">
+                ¿Ya tienes cuenta? Inicia sesión
+            </p>
+
+        </section>
+
+        <p id="mensaje" role="alert" aria-live="polite"></p>
+
+        <p class="nota">
+            MiMundoUPN - Universidad Privada del Norte
+        </p>
+
+    </main>
+
+    <script>
+        const seccionLogin = document.getElementById('seccionLogin');
+        const seccionRegistro = document.getElementById('seccionRegistro');
+        const mensaje = document.getElementById('mensaje');
+
+        // Mostrar mensajes
+        function mostrarMensaje(texto, color = '#1769aa') {
+            mensaje.textContent = texto;
+            mensaje.style.color = color;
+        }
+
+        // Cambiar entre login y registro
+        function mostrarRegistro() {
+            seccionLogin.classList.add('oculto');
+            seccionRegistro.classList.remove('oculto');
+            mostrarMensaje('');
+        }
+
+        function mostrarLogin() {
+            seccionRegistro.classList.add('oculto');
+            seccionLogin.classList.remove('oculto');
+            mostrarMensaje('');
+        }
+
+        document.getElementById('irRegistro').addEventListener(
+            'click',
+            mostrarRegistro
+        );
+
+        document.getElementById('irLogin').addEventListener(
+            'click',
+            mostrarLogin
+        );
+
+        // INICIAR SESIÓN
+        document.getElementById('formLogin').addEventListener(
+            'submit',
+            async (event) => {
+                event.preventDefault();
+
+                const boton = document.getElementById('btnLogin');
+
+                boton.disabled = true;
+                boton.textContent = 'Ingresando...';
+                mostrarMensaje('Verificando tus datos...');
+
+                try {
+                    const datos = {
+                        correo: document.getElementById('correo').value.trim(),
+                        contrasena: document.getElementById('contrasena').value,
+                        tipoUsuario: document.getElementById('tipoUsuario').value
+                    };
+
+                    const respuesta = await fetch('/api/login', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(datos)
+                    });
+
+                    const resultado = await respuesta.json();
+
+                    if (!respuesta.ok || !resultado.correcto) {
+                        throw new Error(
+                            resultado.mensaje || 'No se pudo iniciar sesión.'
+                        );
+                    }
+
+                    const rolId = Number(resultado.usuario?.rolId);
+
+                    if (
+                        (datos.tipoUsuario === '1' && rolId !== 1) ||
+                        (
+                            datos.tipoUsuario === 'administrativo' &&
+                            ![2, 3].includes(rolId)
+                        )
+                    ) {
+                        throw new Error(
+                            'El tipo de usuario seleccionado no corresponde a tu cuenta.'
+                        );
+                    }
+
+                    mostrarMensaje('¡Bienvenido a MiMundoUPN!', 'green');
+
+                    window.location.href = '/index.html';
+
+                } catch (error) {
+                    mostrarMensaje(error.message, 'red');
+
+                    boton.disabled = false;
+                    boton.textContent = 'Iniciar sesión';
+                }
+            }
+        );
+
+        // REGISTRAR CUENTA
+        document.getElementById('formRegistro').addEventListener(
+            'submit',
+            async (event) => {
+                event.preventDefault();
+
+                const boton = document.getElementById('btnRegistro');
+
+                boton.disabled = true;
+                boton.textContent = 'Registrando...';
+
+                mostrarMensaje('Creando tu cuenta...');
+
+                try {
+                    const datos = {
+                        nombres: document.getElementById('nombres').value.trim(),
+                        apellidos: document.getElementById('apellidos').value.trim(),
+                        correo: document.getElementById('correoRegistro').value.trim(),
+                        contrasena: document.getElementById('contrasenaRegistro').value,
+                        tipoUsuario: document.getElementById('tipoRegistro').value
+                    };
+
+                    const respuesta = await fetch('/api/registro', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(datos)
+                    });
+
+                    const resultado = await respuesta.json();
+
+                    if (!respuesta.ok || !resultado.correcto) {
+                        throw new Error(
+                            resultado.mensaje || 'No se pudo registrar la cuenta.'
+                        );
+                    }
+
+                    mostrarMensaje(
+                        '¡Cuenta creada correctamente! Ingresando al sistema...',
+                        'green'
+                    );
+
+                    window.location.href = '/index.html';
+
+                } catch (error) {
+                    mostrarMensaje(error.message, 'red');
+
+                    boton.disabled = false;
+                    boton.textContent = 'Crear cuenta';
+                }
+            }
+        );
+
+    </script>
+
+</body>
+</html>

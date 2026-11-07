@@ -1,151 +1,223 @@
-const sql = require('mssql');
+
+
+const sql = require('mssql/msnodesqlv8');
 const Nodo = require('../entity/Nodo');
 const Arista = require('../entity/Arista');
 const Aula = require('../entity/Aula');
 
-// CONFIGURACIÓN DE TU BASE DE DATOS LOCAL
+// Configuración de SQL Server
 const dbConfig = {
-  user: 'sa', // Cambia esto si usas otro usuario
-  password: 'Admin2026', // <--- CAMBIA ESTO por tu contraseña real
-  server: 'DESKTOP-P8C0ROV', // O el nombre de tu instancia
-  port: 1433, // Puerto por defecto de SQL Server
-  database: 'BDGeolo',
-  options: {
-    encrypt: false,
-    trustServerCertificate: true
-  }
+  connectionString:
+    'Driver={ODBC Driver 18 for SQL Server};Server=LAPTOP-LPAGM3K8,1433;Database=BDGeolo;Trusted_Connection=yes;Encrypt=no;TrustServerCertificate=yes;'
 };
 
-// Límites del plano (los mantenemos fijos para validar el "fuera de rango")
-const LIMITES_CAMPUS = { xMin: 0, xMax: 100, yMin: 0, yMax: 70 };
+// Límites del plano
+const LIMITES_CAMPUS = {
+  xMin: 0,
+  xMax: 100,
+  yMin: 0,
+  yMax: 70
+};
 
 class GrafoRepository {
   constructor() {
-    this.METROS_POR_UNIDAD = 2; // Ya no se usará para calcular distancias reales
+    this.METROS_POR_UNIDAD = 2;
+    this.poolPromise = null;
   }
 
-  // 1. Obtener Nodos (Aulas, pasillos, servicios) desde SQL Server
+  // Obtener o reutilizar la conexión con SQL Server
+  async obtenerConexion() {
+    if (!this.poolPromise) {
+      this.poolPromise = sql.connect(dbConfig).catch(error => {
+        this.poolPromise = null;
+        throw error;
+      });
+    }
+
+    return this.poolPromise;
+  }
+
+  // Convertir un registro SQL en objeto Aula
+  mapearAula(registro) {
+    return new Aula(
+      registro.codigo,
+      registro.nombre,
+      registro.nodoId,
+      registro.bloque,
+      registro.piso,
+      registro.categoria
+    );
+  }
+
+  // Consulta reutilizable para obtener aulas y espacios
+  async consultarAulas(codigo = null) {
+    const pool = await this.obtenerConexion();
+    const request = pool.request();
+
+    let filtro = '';
+
+    if (codigo !== null) {
+      request.input('codigo', sql.VarChar, codigo);
+      filtro = 'AND UPPER(e.codigo) = @codigo';
+    }
+
+    const result = await request.query(`
+      SELECT
+        e.codigo,
+        e.nombre,
+        e.espacioId AS nodoId,
+        p.nombre AS bloque,
+        e.piso,
+        t.nombre AS categoria
+      FROM ESPACIO e
+      INNER JOIN PABELLON p
+        ON e.pabellonId = p.pabellonId
+      INNER JOIN TIPO_ESPACIO t
+        ON e.tipoEspacioId = t.tipoEspacioId
+      WHERE e.estado = 1
+      ${filtro}
+      ORDER BY e.codigo
+    `);
+
+    return result.recordset.map(registro =>
+      this.mapearAula(registro)
+    );
+  }
+
+  // 1. Obtener nodos
   async obtenerNodos() {
     try {
-      const pool = await sql.connect(dbConfig);
-      // Mapeamos latitud/longitud a x/y para que tu Dijkstra siga funcionando
+      const pool = await this.obtenerConexion();
+
       const result = await pool.request().query(`
-        SELECT 
-          espacioId AS id, 
-          nombre, 
-          longitud AS x, 
-          latitud AS y, 
-          tipoEspacioId AS tipo 
-        FROM ESPACIO 
+        SELECT
+          espacioId AS id,
+          nombre,
+          longitud AS x,
+          latitud AS y,
+          tipoEspacioId AS tipo
+        FROM ESPACIO
         WHERE estado = 1
       `);
-      
-      return result.recordset.map(r => new Nodo(r.id, r.nombre, r.x, r.y, r.tipo.toString()));
+
+      return result.recordset.map(registro =>
+        new Nodo(
+          registro.id,
+          registro.nombre,
+          Number(registro.x),
+          Number(registro.y),
+          String(registro.tipo)
+        )
+      );
+
     } catch (error) {
-      console.error("Error al obtener nodos:", error);
+      console.error('Error al obtener nodos:', error);
       return [];
     }
   }
 
-  // 2. Obtener Aristas (Conexiones)
-    // 2. Obtener Aristas (Conexiones lógicas de pasillos)
+  // 2. Obtener conexiones entre nodos
   async obtenerAristas() {
     const nodos = await this.obtenerNodos();
     const aristas = [];
 
-    // Buscamos los IDs del Patio y la Entrada para armar el grafo estrella
-    const idPatio = nodos.find(n => n.nombre.includes('Patio'))?.id;
-    const idEntrada = nodos.find(n => n.nombre.includes('Entrada'))?.id;
-
-    // Función auxiliar para calcular distancia euclidiana (plano)
-    const calcularDistancia = (idA, idB) => {
-      const a = nodos.find(n => n.id === idA);
-      const b = nodos.find(n => n.id === idB);
-      // Distancia en unidades del plano
-      const distUnidades = Math.hypot(b.x - a.x, b.y - a.y);
-      // Multiplicamos por 2 metros (según tu diseño original) y redondeamos
-      return Math.round(distUnidades * 2); 
-    };
-
-    // 1. Conectar la Entrada con el Patio
-    if (idEntrada && idPatio) {
-      aristas.push(new Arista(idEntrada, idPatio, calcularDistancia(idEntrada, idPatio)));
+    if (nodos.length < 2) {
+      return aristas;
     }
 
-    // 2. Conectar el Patio con todos los demás ambientes (Aulas, Labs, Servicios)
-    nodos.forEach(nodo => {
-      if (nodo.id !== idPatio && nodo.id !== idEntrada) {
-        aristas.push(new Arista(idPatio, nodo.id, calcularDistancia(idPatio, nodo.id)));
-      }
-    });
+    const patio = nodos.find(n =>
+      n.nombre.toLowerCase().includes('patio')
+    );
+
+    const entrada = nodos.find(n =>
+      n.nombre.toLowerCase().includes('entrada')
+    );
+
+    const calcularDistancia = (a, b) => {
+      const distancia = Math.hypot(
+        b.x - a.x,
+        b.y - a.y
+      );
+
+      return Math.round(
+        distancia * this.METROS_POR_UNIDAD
+      );
+    };
+
+    if (entrada && patio) {
+      aristas.push(
+        new Arista(
+          entrada.id,
+          patio.id,
+          calcularDistancia(entrada, patio)
+        )
+      );
+    }
+
+    if (patio) {
+      nodos.forEach(nodo => {
+        if (
+          nodo.id !== patio.id &&
+          (!entrada || nodo.id !== entrada.id)
+        ) {
+          aristas.push(
+            new Arista(
+              patio.id,
+              nodo.id,
+              calcularDistancia(patio, nodo)
+            )
+          );
+        }
+      });
+    }
 
     return aristas;
   }
 
+  // 3. Obtener todas las aulas y espacios
   async obtenerAulas() {
     try {
-      const pool = await sql.connect(dbConfig);
-      const result = await pool.request().query(`
-        SELECT 
-          e.codigo, 
-          e.nombre, 
-          e.espacioId AS nodoId, 
-          p.nombre AS bloque, 
-          e.piso, 
-          t.nombre AS categoria
-        FROM ESPACIO e
-        INNER JOIN PABELLON p ON e.pabellonId = p.pabellonId
-        INNER JOIN TIPO_ESPACIO t ON e.tipoEspacioId = t.tipoEspacioId
-        WHERE e.estado = 1
-      `);
+      return await this.consultarAulas();
 
-      return result.recordset.map(r => 
-        new Aula(r.codigo, r.nombre, r.nodoId, r.bloque, r.piso, r.categoria)
-      );
     } catch (error) {
-      console.error("Error al obtener aulas:", error);
+      console.error('Error al obtener aulas:', error);
       return [];
     }
   }
 
+  // 4. Buscar aula por código
   async obtenerAulaPorCodigo(codigo) {
     try {
-      const buscado = String(codigo || '').trim().toUpperCase();
-      const pool = await sql.connect(dbConfig);
-      
-      const result = await pool.request()
-        .input('codigo', sql.VarChar, buscado)
-        .query(`
-          SELECT 
-            e.codigo, 
-            e.nombre, 
-            e.espacioId AS nodoId, 
-            p.nombre AS bloque, 
-            e.piso, 
-            t.nombre AS categoria
-          FROM ESPACIO e
-          INNER JOIN PABELLON p ON e.pabellonId = p.pabellonId
-          INNER JOIN TIPO_ESPACIO t ON e.tipoEspacioId = t.tipoEspacioId
-          WHERE e.estado = 1 AND UPPER(e.codigo) = @codigo
-        `);
+      const buscado = String(codigo || '')
+        .trim()
+        .toUpperCase();
 
-      if (result.recordset.length > 0) {
-        const r = result.recordset[0];
-        return new Aula(r.codigo, r.nombre, r.nodoId, r.bloque, r.piso, r.categoria);
+      if (!buscado) {
+        return null;
       }
-      return null;
+
+      const resultado = await this.consultarAulas(buscado);
+
+      return resultado.length > 0
+        ? resultado[0]
+        : null;
+
     } catch (error) {
-      console.error("Error al buscar aula por código:", error);
+      console.error('Error al buscar aula:', error);
       return null;
     }
   }
 
+  // 5. Obtener límites del campus
   obtenerLimites() {
     return LIMITES_CAMPUS;
   }
 
+  // 6. Validar coordenadas
   estaDentroDelCampus(x, y) {
     return (
+      Number.isFinite(x) &&
+      Number.isFinite(y) &&
       x >= LIMITES_CAMPUS.xMin &&
       x <= LIMITES_CAMPUS.xMax &&
       y >= LIMITES_CAMPUS.yMin &&
