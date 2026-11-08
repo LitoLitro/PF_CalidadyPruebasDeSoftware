@@ -339,14 +339,19 @@ const EDIFICIOS = [
 
     async function pedir(url, opciones) {
       const res = await fetch(API + url, opciones);
-      return { ok: res.ok, data: await res.json() };
+      return { ok: res.ok, status: res.status, data: await res.json() };
     }
 
     /* ---------- Arranque ---------- */
     async function iniciar() {
       try {
         const [mapa, aulas] = await Promise.all([pedir('/api/mapa'), pedir('/api/aulas')]);
-        if (!mapa.ok || !aulas.ok) throw new Error('respuesta no valida');
+        const fallida = [mapa, aulas].find((r) => !r.ok);
+        if (fallida) {
+          // El servidor sí responde, pero no pudo leer los datos: se muestra el motivo real
+          mostrarError('No se pudo cargar el mapa', fallida.data.mensaje || 'Revisa la base de datos.');
+          return;
+        }
         estado.mapa = mapa.data;
         estado.aulas = aulas.data;
       } catch (e) {

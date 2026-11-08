@@ -40,18 +40,31 @@ PF_CalidadyPruebasDeSoftware/
 │   └── Evidencias del proyecto
 ├── mimundoupn-motor-rutas/
 │   ├── boundary/
+│   │   ├── authRoutes.js
 │   │   └── rutaRoutes.js
 │   ├── control/
+│   │   ├── AuthService.js
+│   │   ├── EmailService.js
+│   │   ├── MapaService.js
 │   │   ├── RutaService.js
-│   │   └── MapaService.js
+│   │   └── errores.js
 │   ├── entity/
 │   │   ├── Nodo.js
 │   │   ├── Arista.js
 │   │   └── Aula.js
 │   ├── persistence/
-│   │   └── GrafoRepository.js
+│   │   ├── GrafoRepository.js
+│   │   ├── UsuarioRepository.js
+│   │   ├── db.js
+│   │   └── dbConfig.js
 │   ├── public/
-│   │   └── index.html
+│   │   ├── index.html
+│   │   └── login.html
+│   ├── selenium/
+│   │   └── PF_SistemaLocalizacion.side
+│   ├── test/
+│   ├── .env.example
+│   ├── app.js
 │   ├── package.json
 │   └── server.js
 ├── BDPFcalidadPS.sql
@@ -137,7 +150,7 @@ Página oficial:
 
 https://code.visualstudio.com/
 
-### 4. Instalar SQL Server y SSMS (opcional para ejecutar el motor de rutas actual)
+### 4. Instalar SQL Server y SSMS (obligatorio)
 
 El repositorio incluye el archivo `BDPFcalidadPS.sql`, que contiene el script de base de datos del proyecto.
 
@@ -155,7 +168,25 @@ Descargas oficiales:
 - SQL Server: https://www.microsoft.com/sql-server/sql-server-downloads
 - SQL Server Management Studio: https://learn.microsoft.com/sql/ssms/download-sql-server-management-studio-ssms
 
-**Importante:** La ejecución del motor de rutas de demostración no requiere configurar SQL Server, porque actualmente los datos del grafo se encuentran en memoria. La integración con SQL Server está contemplada como un siguiente paso.
+**Importante:** El motor de rutas lee los ambientes desde SQL Server, por lo que la base de datos `BDGeolo` debe existir antes de ejecutar `npm start`. Si ya la habías creado con una versión anterior del script, elimínala y vuelve a ejecutar `BDPFcalidadPS.sql` para obtener los ambientes "Entrada principal" y "Patio central".
+
+### 5. Configurar la conexión a la base de datos
+
+El sistema se conecta a SQL Server mediante el controlador **ODBC Driver 18 for SQL Server**. Si no lo tienes instalado, descárgalo desde la página oficial de Microsoft.
+
+Dentro de la carpeta `mimundoupn-motor-rutas`, copia el archivo `.env.example` con el nombre `.env`:
+
+```powershell
+copy .env.example .env
+```
+
+Abre `.env` y revisa los datos de tu PC:
+
+- `DB_SERVER`: `localhost`, el nombre de tu PC o `localhost\SQLEXPRESS`.
+- `DB_USER` y `DB_PASSWORD`: déjalos vacíos para usar la autenticación de Windows, o completa `sa` y su contraseña para usar la autenticación de SQL Server.
+- `SESSION_SECRET`: una clave para las sesiones del login.
+
+El archivo `.env` no se sube a GitHub. Verifica también que TCP/IP esté habilitado en el puerto 1433 (SQL Server Configuration Manager).
 
 ## Clonar el repositorio
 
@@ -221,6 +252,10 @@ http://localhost:3000
 
 La interfaz web se sirve desde la carpeta `public/`, por lo que no es necesario abrir el archivo HTML directamente.
 
+Para iniciar sesión o crear una cuenta de estudiante, abre:
+
+http://localhost:3000/login.html
+
 Para detener el servidor, regresa a la terminal y presiona:
 
 ```text
@@ -251,7 +286,7 @@ La aplicación contempla escenarios como:
 
 ### Ambientes de demostración
 
-El sistema incluye ambientes de ejemplo como laboratorios, aulas, biblioteca, cafetería y auditorio.
+El script `BDPFcalidadPS.sql` incluye 7 ambientes de ejemplo: Aula 101, Aula 102, Laboratorio 1, Biblioteca, Punto Emergencia 1, Entrada principal y Patio central.
 
 Estos datos son demostrativos y deben actualizarse para representar fielmente la distribución real del campus.
 
@@ -297,19 +332,22 @@ Para ejecutar las pruebas:
 npm test
 ```
 
-Si aparece un error indicando que Jest no está instalado, puedes instalarlo como dependencia de desarrollo:
+Jest y Supertest se instalan con `npm install`, porque están declarados como dependencias de desarrollo. Las pruebas no necesitan SQL Server: simulan la base de datos.
+
+Para las pruebas funcionales con Selenium, instala el ejecutor una sola vez y, con `npm start` en otra terminal, ejecuta:
 
 ```powershell
-npm install --save-dev jest
+npm install -g selenium-side-runner
+selenium-side-runner -c "browserName=chrome" selenium\PF_SistemaLocalizacion.side
 ```
 
-Después, vuelve a ejecutar:
+Para obtener el reporte de cobertura:
 
 ```powershell
-npm test
+npm run test:coverage
 ```
 
-**Nota:** La instalación de Jest no crea automáticamente los casos de prueba. Es necesario que existan pruebas implementadas y que estén configuradas correctamente para poder ejecutarlas.
+La extensión Selenium IDE ya no está disponible en Chrome y, en las versiones actuales de Firefox, su comando `type` falla con el error `initKeyEvent is not a function`; por eso se usa `selenium-side-runner`.
 
 ## Solución de problemas frecuentes
 
@@ -333,9 +371,13 @@ Comprueba que `npm start` siga ejecutándose y que no aparezcan errores en la te
 
 http://localhost:3000
 
-### La aplicación no utiliza los datos de SQL Server
+### La página muestra "No se pudo conectar con la base de datos"
 
-El motor de rutas utiliza actualmente datos en memoria. Disponer de SQL Server instalado no conecta automáticamente la aplicación con la base de datos. Para ello es necesario implementar y configurar la integración correspondiente.
+Comprueba que SQL Server esté encendido, que el controlador ODBC Driver 18 esté instalado, que los datos del archivo `.env` sean correctos y que TCP/IP esté habilitado en el puerto 1433.
+
+### La página muestra que no existe un espacio "Patio"
+
+La base de datos fue creada con una versión anterior del script. Elimina `BDGeolo` y vuelve a ejecutar `BDPFcalidadPS.sql`.
 
 ## Control de versiones
 
@@ -370,4 +412,4 @@ https://github.com/LitoLitro/PF_CalidadyPruebasDeSoftware
 
 ## Estado del proyecto
 
-Proyecto académico en desarrollo. La implementación actual incluye el motor de rutas de demostración y su interfaz web. La conexión con SQL Server y la ampliación de las pruebas automatizadas forman parte de las actividades que pueden completarse posteriormente.
+Proyecto académico en desarrollo. La implementación actual incluye el motor de rutas, su interfaz web, la conexión con SQL Server y una suite de pruebas automatizadas con Jest, Supertest y Selenium IDE.

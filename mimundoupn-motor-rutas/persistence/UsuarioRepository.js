@@ -1,4 +1,17 @@
 const { sql, conectarDB } = require('./db');
+const { ErrorConflicto } = require('../control/errores');
+
+const normalizarCorreo = (correo) => String(correo || '').trim();
+
+// Ejecuta un UPDATE con sus parámetros y devuelve true si modificó alguna fila.
+// Evita repetir la conexión, los parámetros y la lectura de rowsAffected en cada método.
+async function ejecutarActualizacion(consulta, parametros) {
+    const pool = await conectarDB();
+    const request = pool.request();
+    parametros.forEach(([nombre, tipo, valor]) => request.input(nombre, tipo, valor));
+    const resultado = await request.query(consulta);
+    return resultado.rowsAffected[0] > 0;
+}
 
 class UsuarioRepository {
 
@@ -7,7 +20,7 @@ class UsuarioRepository {
         const pool = await conectarDB();
 
         const resultado = await pool.request()
-            .input('correo', sql.VarChar(100), correo.trim())
+            .input('correo', sql.VarChar(100), normalizarCorreo(correo))
             .query(`
                 SELECT
                     usuarioID,
@@ -47,7 +60,7 @@ class UsuarioRepository {
                 `);
 
             if (existente.recordset.length > 0) {
-                throw new Error('Este correo ya tiene una cuenta registrada.');
+                throw new ErrorConflicto('Este correo ya está registrado. Inicia sesión con tu cuenta.');
             }
 
             // Generar el siguiente identificador
@@ -116,52 +129,32 @@ class UsuarioRepository {
 
     // Guardar correo personal pendiente de verificación
     async guardarCorreoPersonalPendiente(usuarioID, correoPersonal) {
-        const pool = await conectarDB();
-
-        const resultado = await pool.request()
-            .input('usuarioID', sql.Int, usuarioID)
-            .input('correoPersonal', sql.NVarChar(254), correoPersonal.trim())
-            .query(`
+        return ejecutarActualizacion(`
                 UPDATE dbo.USUARIO
                 SET correoPersonal = @correoPersonal
                 WHERE usuarioID = @usuarioID
                   AND correoPersonalVerificado = 0
-            `);
-
-        return resultado.rowsAffected[0] > 0;
+            `, [['usuarioID', sql.Int, usuarioID], ['correoPersonal', sql.NVarChar(254), correoPersonal.trim()]]);
     }
 
     // Verificar correo personal
     async verificarCorreoPersonal(usuarioID) {
-        const pool = await conectarDB();
-
-        const resultado = await pool.request()
-            .input('usuarioID', sql.Int, usuarioID)
-            .query(`
+        return ejecutarActualizacion(`
                 UPDATE dbo.USUARIO
                 SET correoPersonalVerificado = 1
                 WHERE usuarioID = @usuarioID
                   AND correoPersonal IS NOT NULL
                   AND correoPersonalVerificado = 0
-            `);
-
-        return resultado.rowsAffected[0] > 0;
+            `, [['usuarioID', sql.Int, usuarioID]]);
     }
 
     // Actualizar contraseña protegida con bcrypt
     async actualizarContrasena(usuarioID, nuevaContrasena) {
-        const pool = await conectarDB();
-
-        const resultado = await pool.request()
-            .input('usuarioID', sql.Int, usuarioID)
-            .input('contrasena', sql.VarChar(250), nuevaContrasena)
-            .query(`
+        return ejecutarActualizacion(`
                 UPDATE dbo.USUARIO
                 SET [contraseña] = @contrasena
                 WHERE usuarioID = @usuarioID
-            `);
-
-        return resultado.rowsAffected[0] > 0;
+            `, [['usuarioID', sql.Int, usuarioID], ['contrasena', sql.VarChar(250), nuevaContrasena]]);
     }
 }
 

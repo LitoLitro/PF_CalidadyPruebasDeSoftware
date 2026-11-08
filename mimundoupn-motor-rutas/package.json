@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "jest"
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -16,5 +17,19 @@
     "msnodesqlv8": "^6.2.2",
     "mssql": "^10.0.5",
     "nodemailer": "^10.3.1"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "app.js",
+      "boundary/**/*.js",
+      "control/**/*.js",
+      "persistence/**/*.js",
+      "entity/**/*.js"
+    ]
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.3.2"
   }
 }

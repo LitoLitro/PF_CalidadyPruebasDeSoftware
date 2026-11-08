@@ -1,5 +1,10 @@
+/**
+ * CONTROL
+ * Reglas de negocio del registro e inicio de sesión.
+ */
 const bcrypt = require('bcrypt');
 const UsuarioRepository = require('../persistence/UsuarioRepository');
+const { ErrorValidacion, ErrorCredenciales, ErrorConflicto } = require('./errores');
 
 const ROLES = {
     1: 'Estudiante',
@@ -7,96 +12,84 @@ const ROLES = {
     3: 'Administrador'
 };
 
+const COSTO_BCRYPT = 12;
+const LONGITUD_MINIMA_CONTRASENA = 8;
+const LONGITUD_MAXIMA_TEXTO = 100;
+
+const esHashBcrypt = (valor) => /^\$2[aby]\$/.test(valor);
+const cuentaActiva = (usuario) => usuario.estado === true || usuario.estado === 1;
+
+const faltaAlgunCampo = (d) => !d.nombres || !d.apellidos || !d.correo || !d.contrasena || !d.tipoUsuario;
+const superaLimite = (texto) => texto.trim().length > LONGITUD_MAXIMA_TEXTO;
+
+// Reglas del registro: cada una indica cuándo falla y qué mensaje mostrar.
+// Se revisan en orden y se informa la primera que no se cumple.
+const REGLAS_REGISTRO = [
+    [faltaAlgunCampo, 'Completa todos los campos del registro.'],
+    [(d) => d.tipoUsuario !== '1', 'El registro público está disponible solamente para estudiantes. Solicita autorización para una cuenta administrativa.'],
+    [(d) => superaLimite(d.nombres) || superaLimite(d.apellidos), 'Los nombres o apellidos superan el límite permitido.'],
+    [(d) => superaLimite(d.correo), 'El correo supera el límite permitido.'],
+    [(d) => d.contrasena.length < LONGITUD_MINIMA_CONTRASENA, 'La contraseña debe tener al menos 8 caracteres.'],
+];
+
+// Valida los datos del formulario de registro. Lanza ErrorValidacion si algo no cumple.
+function validarDatosRegistro(datos) {
+    const reglaIncumplida = REGLAS_REGISTRO.find(([incumple]) => incumple(datos));
+    if (reglaIncumplida) {
+        throw new ErrorValidacion(reglaIncumplida[1]);
+    }
+}
+
+// Compara la contraseña ingresada con la guardada.
+// Si la guardada aún está en texto plano (cuentas antiguas) y coincide, se migra a bcrypt.
+async function verificarContrasena(usuario, contrasena) {
+    if (esHashBcrypt(usuario.contraseña)) {
+        return bcrypt.compare(contrasena, usuario.contraseña);
+    }
+
+    const coincide = contrasena === usuario.contraseña;
+    if (coincide) {
+        const nuevoHash = await bcrypt.hash(contrasena, COSTO_BCRYPT);
+        await UsuarioRepository.actualizarContrasena(usuario.usuarioID, nuevoHash);
+    }
+    return coincide;
+}
+
 class AuthService {
 
     // Registrar una cuenta nueva
     async registrar(datos) {
+        validarDatosRegistro(datos);
 
-        const { nombres, apellidos, correo, contrasena, tipoUsuario } = datos;
-
-        if (!nombres || !apellidos || !correo || !contrasena || !tipoUsuario) {
-            throw new Error('Completa todos los campos del registro.');
+        const { nombres, apellidos, correo, contrasena } = datos;
+        if (await UsuarioRepository.buscarPorCorreo(correo)) {
+            throw new ErrorConflicto('Este correo ya está registrado. Inicia sesión con tu cuenta.');
         }
 
-        if (tipoUsuario !== '1') {
-            throw new Error('El registro público está disponible solamente para estudiantes. Solicita autorización para una cuenta administrativa.');
-        }
-
-        if (nombres.trim().length > 100 || apellidos.trim().length > 100) {
-            throw new Error('Los nombres o apellidos superan el límite permitido.');
-        }
-
-        if (correo.trim().length > 100) {
-            throw new Error('El correo supera el límite permitido.');
-        }
-
-        if (contrasena.length < 8) {
-            throw new Error('La contraseña debe tener al menos 8 caracteres.');
-        }
-
-        const usuarioExistente = await UsuarioRepository.buscarPorCorreo(correo);
-
-        if (usuarioExistente) {
-            throw new Error('Este correo ya está registrado. Inicia sesión con tu cuenta.');
-        }
-
-        const hash = await bcrypt.hash(contrasena, 12);
-
-        return await UsuarioRepository.registrarUsuario({
-            nombres,
-            apellidos,
-            correo,
-            contrasena: hash
-        });
+        const hash = await bcrypt.hash(contrasena, COSTO_BCRYPT);
+        return UsuarioRepository.registrarUsuario({ nombres, apellidos, correo, contrasena: hash });
     }
 
     // Iniciar sesión
     async iniciarSesion(correo, contrasena) {
-
         if (!correo || !contrasena) {
-            throw new Error('Ingresa tu correo y contraseña.');
+            throw new ErrorValidacion('Ingresa tu correo y contraseña.');
         }
 
         const usuario = await UsuarioRepository.buscarPorCorreo(correo.trim());
-
         if (!usuario) {
-            throw new Error('Correo o contraseña incorrectos.');
+            throw new ErrorCredenciales();
         }
-
-        if (usuario.estado !== true && usuario.estado !== 1) {
-            throw new Error('La cuenta está desactivada.');
+        if (!cuentaActiva(usuario)) {
+            throw new ErrorCredenciales('La cuenta está desactivada.');
         }
-
-        let contrasenaValida = false;
-
-        const tieneHashBcrypt = /^\$2[aby]\$/.test(usuario.contraseña);
-
-        if (tieneHashBcrypt) {
-            contrasenaValida = await bcrypt.compare(
-                contrasena,
-                usuario.contraseña
-            );
-        } else {
-            contrasenaValida = contrasena === usuario.contraseña;
-
-            if (contrasenaValida) {
-                const nuevoHash = await bcrypt.hash(contrasena, 12);
-
-                await UsuarioRepository.actualizarContrasena(
-                    usuario.usuarioID,
-                    nuevoHash
-                );
-            }
-        }
-
-        if (!contrasenaValida) {
-            throw new Error('Correo o contraseña incorrectos.');
+        if (!(await verificarContrasena(usuario, contrasena))) {
+            throw new ErrorCredenciales();
         }
 
         const rol = ROLES[usuario.rolId];
-
         if (!rol) {
-            throw new Error('El usuario tiene un rol no reconocido.');
+            throw new ErrorCredenciales('El usuario tiene un rol no reconocido.');
         }
 
         return {
