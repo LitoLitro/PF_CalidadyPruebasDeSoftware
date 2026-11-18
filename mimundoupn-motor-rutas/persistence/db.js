@@ -2,10 +2,9 @@
 const sql = require('mssql/msnodesqlv8');
 
 const dbConfig = {
-    connectionString:
-        'Driver={ODBC Driver 18 for SQL Server};Server=LAPTOP-LPAGM3K8,1433;Database=BDGeolo;Trusted_Connection=yes;Encrypt=no;TrustServerCertificate=yes;'
+  connectionString:
+    'Driver={ODBC Driver 18 for SQL Server};Server=ULNLABD703PC36;Database=BDGeolo;Trusted_Connection=yes;Encrypt=no;TrustServerCertificate=yes;'
 };
-
 let poolPromise = null;
 
 async function conectarDB() {

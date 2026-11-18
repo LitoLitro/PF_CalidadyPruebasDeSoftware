@@ -8,8 +8,8 @@ const Aula = require('../entity/Aula');
 // Configuración de SQL Server
 const dbConfig = {
   connectionString:
-    'Driver={ODBC Driver 18 for SQL Server};Server=ADMI\\SQLEXPRESS;Database=BDGeolo;Uid=Adrian;Pwd=1234;Encrypt=no;TrustServerCertificate=yes;'
-};
+    'Driver={ODBC Driver 18 for SQL Server};Server=ULNLABD703PC36;Database=BDGeolo;Trusted_Connection=yes;Encrypt=no;TrustServerCertificate=yes;'
+};;
 
 // Límites del plano
 const LIMITES_CAMPUS = {
