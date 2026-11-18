@@ -1,13 +1,7 @@
-/**
- * CONTROL
- * Aqui vive la logica de negocio de HU01: el algoritmo de Dijkstra y las
- * validaciones de sus criterios de aceptacion (aula no encontrada, fuera de
- * rango). Esta capa no sabe nada de HTTP (eso es trabajo de Boundary) ni de
- * SQL (eso es trabajo de Persistencia): solo coordina el caso de uso.
- */
+
 const grafoRepo = require('../persistence/GrafoRepository');
 
-const METROS_POR_MINUTO = 80; // velocidad de caminata usada para estimar el tiempo
+const METROS_POR_MINUTO = 80; 
 
 function dijkstra(nodos, aristas, origenId, destinoId) {
   const distancias = {};
@@ -56,8 +50,6 @@ function dijkstra(nodos, aristas, origenId, destinoId) {
   return { ruta, distanciaTotal: distancias[destinoId] };
 }
 
-// El usuario puede estar en cualquier punto del plano: se parte desde el nodo
-// del grafo que le queda mas cerca.
 function nodoMasCercano(nodos, x, y) {
   let mejor = null;
   let menor = Infinity;
@@ -75,7 +67,6 @@ function esNumeroValido(valor) {
   return valor !== null && valor !== undefined && valor !== '' && Number.isFinite(Number(valor));
 }
 
-// 👇 1. Convertimos la función en ASÍNCRONA
 async function generarRuta({ origenX, origenY, codigoAulaDestino }) {
   if (!esNumeroValido(origenX) || !esNumeroValido(origenY)) {
     return {
@@ -86,8 +77,6 @@ async function generarRuta({ origenX, origenY, codigoAulaDestino }) {
   const x = Number(origenX);
   const y = Number(origenY);
 
-  // Criterio de aceptacion: "fuera de rango"
-  // (Este método en el repo es síncrono, no necesita await)
   if (!grafoRepo.estaDentroDelCampus(x, y)) {
     return {
       error: 'FUERA_DE_RANGO',
@@ -95,10 +84,8 @@ async function generarRuta({ origenX, origenY, codigoAulaDestino }) {
     };
   }
 
-  // 👇 2. Agregamos AWAIT a las consultas a la base de datos
   const aula = await grafoRepo.obtenerAulaPorCodigo(codigoAulaDestino);
   
-  // Criterio de aceptacion: "aula no encontrada"
   if (!aula) {
     return {
       error: 'AULA_NO_ENCONTRADA',
@@ -106,7 +93,6 @@ async function generarRuta({ origenX, origenY, codigoAulaDestino }) {
     };
   }
 
-  // 👇 3. Agregamos AWAIT a nodos y aristas
   const nodos = await grafoRepo.obtenerNodos();
   const aristas = await grafoRepo.obtenerAristas();
   const metrosPorUnidad = grafoRepo.METROS_POR_UNIDAD;
@@ -118,7 +104,6 @@ async function generarRuta({ origenX, origenY, codigoAulaDestino }) {
     return { error: 'SIN_RUTA', mensaje: 'No existe un camino disponible hacia esa aula.' };
   }
 
-  // Paradas (con coordenadas, para que el frontend dibuje la ruta) y tramos
   const porId = new Map(nodos.map((n) => [n.id, n]));
   const paradas = resultado.ruta.map((id) => {
     const n = porId.get(id);
@@ -135,7 +120,6 @@ async function generarRuta({ origenX, origenY, codigoAulaDestino }) {
     tramos.push({ desde: paradas[i].nombre, hasta: paradas[i + 1].nombre, metros: arista.peso });
   }
 
-  // Si el usuario no esta justo sobre un nodo, la ruta empieza en su posicion
   let distanciaTotal = resultado.distanciaTotal;
   if (distanciaAlNodo >= 0.5) {
     const metrosAcceso = Math.round(distanciaAlNodo * metrosPorUnidad);
