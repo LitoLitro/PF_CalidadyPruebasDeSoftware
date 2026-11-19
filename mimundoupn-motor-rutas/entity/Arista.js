@@ -1,9 +1,9 @@
-
 class Arista {
-  constructor(origenId, destinoId, peso) {
+  constructor(origenId, destinoId, peso, id = null) {
+    this.id = id;
     this.origenId = origenId;
     this.destinoId = destinoId;
-    this.peso = peso; 
+    this.peso = peso; // metros
   }
 }
 

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MiMundoUPN · Administrar ambientes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --tinta: #14213D; --tinta-suave: #556579; --ruta: #FFC21A; --usted: #2F6BFF;
+      --suelo: #E8EEF3; --fuera: #D3DCE5; --pasillo: #C3CFDA; --patio: #D3E4CF;
+      --linea: #DCE3EA; --servicio: #0F6B5C; --error: #B3261E; --error-fondo: #FDECEA; --ok-fondo: #DDF2E6;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px; color: var(--tinta); background: #F4F7FA; }
+    button, input, select { font: inherit; color: inherit; }
+    :focus-visible { outline: 3px solid var(--usted); outline-offset: 2px; }
+
+    header { display: flex; align-items: center; gap: 16px; padding: 14px 24px; background: var(--tinta); color: #fff; }
+    header h1 { margin: 0; font-size: 19px; font-weight: 800; font-stretch: 115%; }
+    header nav { margin-left: auto; display: flex; gap: 16px; align-items: center; font-size: 13px; }
+    header a, header button { color: var(--ruta); font-weight: 700; text-decoration: none; background: none; border: 0; cursor: pointer; padding: 0; }
+
+    main { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; gap: 20px; padding: 20px 24px; align-items: start; }
+    .tarjeta { background: #fff; border: 1px solid var(--linea); border-radius: 12px; padding: 18px; }
+    .tarjeta h2 { margin: 0 0 12px; font-size: 16px; }
+    .cab { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .cab h2 { margin: 0; }
+
+    .boton { height: 38px; padding: 0 16px; font-weight: 700; color: var(--ruta); background: var(--tinta); border: 0; border-radius: 9px; cursor: pointer; }
+    .boton:hover { background: #22345C; }
+    .boton.sec { color: var(--tinta); background: #fff; border: 1.5px solid #B4C1CE; }
+    .boton.peligro { color: #fff; background: var(--error); }
+    .boton:disabled { opacity: .55; cursor: default; }
+
+    input[type="search"] { width: 100%; height: 38px; padding: 0 10px; border: 1.5px solid #B4C1CE; border-radius: 9px; margin-bottom: 10px; }
+    #tabla { list-style: none; margin: 0; padding: 0; max-height: calc(100vh - 210px); overflow-y: auto; }
+    #tabla button { display: flex; gap: 10px; align-items: center; width: 100%; padding: 8px; text-align: left; background: transparent; border: 0; border-radius: 9px; cursor: pointer; }
+    #tabla button:hover { background: #F0F4F7; }
+    #tabla button.activa { background: #FFF1BF; }
+    .placa { flex: none; min-width: 64px; padding: 5px 6px; font-size: 12px; font-weight: 800; text-align: center; color: #fff; background: var(--tinta); border-radius: 6px; }
+    .n { display: block; font-weight: 600; }
+    .m { display: block; font-size: 12px; color: var(--tinta-suave); }
+
+    form .rejilla { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .campo { display: flex; flex-direction: column; gap: 4px; }
+    .campo.doble { grid-column: span 2; }
+    .campo.total { grid-column: 1 / -1; }
+    .campo label { font-weight: 700; font-size: 13px; }
+    .campo input, .campo select { height: 38px; padding: 0 10px; background: #fff; border: 1.5px solid #B4C1CE; border-radius: 9px; }
+    .ayuda { margin: 4px 0 0; font-size: 12px; color: var(--tinta-suave); }
+    fieldset { margin: 18px 0 0; padding: 14px; border: 1px solid var(--linea); border-radius: 10px; }
+    legend { padding: 0 6px; font-weight: 800; }
+
+    .ubicacion { display: grid; grid-template-columns: 1fr 260px; gap: 16px; }
+    #mini { width: 100%; background: var(--fuera); border-radius: 10px; cursor: crosshair; display: block; }
+    .campus { fill: var(--suelo); stroke: var(--tinta); stroke-width: .35; stroke-dasharray: 1.4 1; }
+    .edificio { fill: #fff; stroke: #AFBDCB; stroke-width: .35; }
+    .patio { fill: var(--patio); }
+    .lbl { font-size: 2.6px; font-weight: 700; fill: #6B7C8F; pointer-events: none; }
+    .arista { stroke: var(--pasillo); stroke-width: .8; }
+    .arista.propia { stroke: var(--ruta); stroke-width: 1.4; }
+    .nodo { fill: #fff; stroke: var(--tinta); stroke-width: .5; }
+    .nodo.vecino { fill: var(--ruta); }
+    .nuevo { fill: var(--usted); stroke: #fff; stroke-width: .6; }
+
+    #conexiones { max-height: 260px; overflow-y: auto; display: grid; gap: 4px; }
+    .conexion { display: grid; grid-template-columns: 22px 1fr 110px; gap: 8px; align-items: center; padding: 3px 4px; border-radius: 6px; }
+    .conexion:hover { background: #F4F7FA; }
+    .conexion input[type="number"] { height: 30px; padding: 0 6px; border: 1.5px solid #B4C1CE; border-radius: 7px; width: 100%; }
+    .conexion input[type="number"]:disabled { background: #F4F7FA; }
+
+    .horarios { display: grid; grid-template-columns: 110px 90px 1fr 1fr; gap: 6px 10px; align-items: center; }
+    .horarios input[type="time"] { height: 32px; padding: 0 6px; border: 1.5px solid #B4C1CE; border-radius: 7px; }
+    .horarios .tit { font-size: 12px; font-weight: 700; color: var(--tinta-suave); }
+
+    .acciones { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+    .mensaje { margin: 14px 0 0; padding: 10px 12px; border-radius: 8px; }
+    .mensaje:empty { display: none; }
+    .mensaje.error { background: var(--error-fondo); color: var(--error); border-left: 4px solid var(--error); }
+    .mensaje.ok { background: var(--ok-fondo); color: #0F6B3C; border-left: 4px solid #0F6B3C; }
+    .bloqueo { max-width: 520px; margin: 60px auto; text-align: center; }
+
+    @media (max-width: 1000px) {
+      main { grid-template-columns: 1fr; }
+      .ubicacion { grid-template-columns: 1fr; }
+      form .rejilla { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>MiMundoUPN · Administrar ambientes</h1>
+    <nav>
+      <span id="quien"></span>
+      <a href="index.html">Ver mapa</a>
+      <button type="button" id="salir">Cerrar sesión</button>
+    </nav>
+  </header>
+
+  <div id="bloqueo" class="tarjeta bloqueo" hidden></div>
+
+  <main id="contenido" hidden>
+    <section class="tarjeta">
+      <div class="cab">
+        <h2>Ambientes <span id="conteo" class="m" style="display:inline"></span></h2>
+        <button type="button" class="boton" id="nuevo">+ Nuevo</button>
+      </div>
+      <input type="search" id="filtro" placeholder="Filtrar por código, nombre o pabellón" aria-label="Filtrar ambientes">
+      <ul id="tabla"></ul>
+    </section>
+
+    <section class="tarjeta">
+      <h2 id="titulo-form">Nuevo ambiente</h2>
+      <form id="form" novalidate>
+        <div class="rejilla">
+          <div class="campo"><label for="codigo">Código *</label><input id="codigo" maxlength="50" required></div>
+          <div class="campo doble"><label for="nombre">Nombre *</label><input id="nombre" maxlength="50" required></div>
+          <div class="campo"><label for="tipo">Tipo *</label><select id="tipo" required></select></div>
+          <div class="campo doble"><label for="pabellon">Pabellón</label><select id="pabellon"></select></div>
+          <div class="campo"><label for="piso">Piso</label><input id="piso" type="number" min="1" value="1"></div>
+          <div class="campo"><label for="capacidad">Capacidad</label><input id="capacidad" type="number" min="0"></div>
+          <div class="campo total"><label for="ubiDesc">Descripción de ubicación</label><input id="ubiDesc" maxlength="250"></div>
+        </div>
+
+        <fieldset>
+          <legend>Ubicación y conexiones (grafo)</legend>
+          <div class="ubicacion">
+            <div>
+              <svg id="mini" viewBox="-4 -4 108 78" role="img" aria-label="Plano del campus: haz clic para fijar la ubicación"></svg>
+              <p class="ayuda">Haz clic en el plano para fijar la ubicación. Las líneas amarillas son las conexiones del ambiente.</p>
+            </div>
+            <div>
+              <div class="rejilla" style="grid-template-columns: 1fr 1fr; margin-bottom: 10px;">
+                <div class="campo"><label for="x">X (0–100)</label><input id="x" type="number" step="0.5" min="0" max="100"></div>
+                <div class="campo"><label for="y">Y (0–70)</label><input id="y" type="number" step="0.5" min="0" max="70"></div>
+              </div>
+              <div class="tit m" style="margin-bottom:4px">Conectar con · distancia (m)</div>
+              <div id="conexiones"></div>
+              <p class="ayuda">Si dejas la distancia vacía se calcula sola. Sin conexiones marcadas, se une al nodo más cercano.</p>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Horario de atención</legend>
+          <div class="horarios" id="horarios"></div>
+          <p class="ayuda">Deja todos los días sin marcar si el ambiente no tiene horario de atención (por ejemplo, un aula).</p>
+        </fieldset>
+
+        <div class="acciones">
+          <button type="submit" class="boton" id="guardar">Guardar ambiente</button>
+          <button type="button" class="boton sec" id="cancelar">Limpiar</button>
+          <button type="button" class="boton peligro" id="eliminar" hidden>Eliminar</button>
+        </div>
+        <p class="mensaje" id="mensaje" aria-live="polite"></p>
+      </form>
+    </section>
+  </main>
+
+  <script src="campus.js"></script>
+  <script>
+    // BOUNDARY (frontend del CRUD). La autorizacion real la valida el backend en /api/admin.
+    const { EDIFICIOS, PATIO, DIAS } = window.CAMPUS;
+    const $ = (id) => document.getElementById(id);
+    const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const norm = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const estado = { ambientes: [], nodos: [], aristas: [], editando: null, punto: null };
+
+    async function pedir(url, opciones = {}) {
+      const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opciones });
+      let data = {};
+      try { data = await res.json(); } catch (e) { /* sin cuerpo */ }
+      return { ok: res.ok, status: res.status, data };
+    }
+
+    function mensaje(texto, tipo = 'error') {
+      $('mensaje').className = `mensaje ${tipo}`;
+      $('mensaje').textContent = texto;
+    }
+
+    function bloquear(html) {
+      $('contenido').hidden = true;
+      $('bloqueo').hidden = false;
+      $('bloqueo').innerHTML = html;
+    }
+
+    /* ---------- Arranque ---------- */
+    async function iniciar() {
+      const sesion = await pedir('/api/sesion').catch(() => ({ ok: false, data: {} }));
+      if (!sesion.ok || !sesion.data.autenticado) {
+        bloquear('<h2>Inicia sesión</h2><p>Esta sección es solo para administradores.</p><p><a href="login.html">Ir al inicio de sesión</a></p>');
+        return;
+      }
+      const u = sesion.data.usuario;
+      $('quien').textContent = `${u.nombres} · ${u.rol}`;
+
+      const catalogos = await pedir('/api/admin/catalogos');
+      if (catalogos.status === 403) {
+        bloquear('<h2>Acceso restringido</h2><p>Solo los usuarios con rol Administrador pueden gestionar ambientes.</p><p><a href="index.html">Volver al mapa</a></p>');
+        return;
+      }
+      if (!catalogos.ok) {
+        bloquear('<h2>No hay conexión con el servidor</h2><p>Inténtalo de nuevo en unos segundos.</p>');
+        return;
+      }
+      $('tipo').innerHTML = catalogos.data.tipos.map((t) => `<option value="${t.id}">${esc(t.nombre)}</option>`).join('');
+      $('pabellon').innerHTML = '<option value="">Sin pabellón (área común)</option>'
+        + catalogos.data.pabellones.map((p) => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('');
+      pintarHorarios([]);
+      $('contenido').hidden = false;
+      await recargar();
+      limpiar();
+    }
+
+    async function recargar() {
+      const [amb, mapa] = await Promise.all([pedir('/api/admin/ambientes'), pedir('/api/mapa')]);
+      estado.ambientes = amb.ok ? amb.data : [];
+      estado.nodos = mapa.ok ? mapa.data.nodos : [];
+      estado.aristas = mapa.ok ? mapa.data.aristas : [];
+      pintarTabla();
+    }
+
+    /* ---------- Lista ---------- */
+    function pintarTabla() {
+      const q = norm($('filtro').value);
+      const items = estado.ambientes.filter((a) => norm(`${a.codigo} ${a.nombre} ${a.pabellon} ${a.tipo}`).includes(q));
+      $('conteo').textContent = `(${items.length})`;
+      $('tabla').innerHTML = items.map((a) => `<li><button type="button" data-id="${a.id}" class="${estado.editando && estado.editando.id === a.id ? 'activa' : ''}">
+          <span class="placa">${esc(a.codigo)}</span>
+          <span><span class="n">${esc(a.nombre)}</span><span class="m">${esc(a.tipo)} · ${esc(a.pabellon || 'Área común')} · (${a.x}, ${a.y})</span></span>
+        </button></li>`).join('') || '<li class="m" style="padding:8px">Sin resultados.</li>';
+    }
+    $('filtro').addEventListener('input', pintarTabla);
+    $('tabla').addEventListener('click', async (e) => {
+      const b = e.target.closest('button[data-id]');
+      if (!b) return;
+      const r = await pedir(`/api/admin/ambientes/${b.dataset.id}`);
+      if (!r.ok) { mensaje(r.data.mensaje || 'No se pudo cargar el ambiente.'); return; }
+      editar(r.data);
+    });
+
+    /* ---------- Formulario ---------- */
+    function limpiar() {
+      estado.editando = null;
+      $('form').reset();
+      $('piso').value = 1;
+      $('titulo-form').textContent = 'Nuevo ambiente';
+      $('eliminar').hidden = true;
+      estado.punto = null;
+      pintarConexiones([]);
+      pintarHorarios([]);
+      dibujarMini();
+      pintarTabla();
+      mensaje('', '');
+    }
+
+    function editar(a) {
+      estado.editando = a;
+      $('titulo-form').textContent = `Editar ${a.codigo}`;
+      $('codigo').value = a.codigo;
+      $('nombre').value = a.nombre;
+      $('tipo').value = a.tipoEspacioId;
+      $('pabellon').value = a.pabellonId ?? '';
+      $('piso').value = a.piso;
+      $('capacidad').value = a.capacidad ?? '';
+      $('ubiDesc').value = a.ubiDesc ?? '';
+      estado.punto = { x: a.x, y: a.y };
+      $('x').value = a.x; $('y').value = a.y;
+      $('eliminar').hidden = false;
+      pintarConexiones(a.conexiones);
+      pintarHorarios(a.horarios);
+      dibujarMini();
+      pintarTabla();
+      mensaje('', '');
+    }
+
+    $('nuevo').addEventListener('click', limpiar);
+    $('cancelar').addEventListener('click', limpiar);
+
+    /* ---------- Conexiones ---------- */
+    function distanciaAuto(n) {
+      if (!estado.punto) return '';
+      return Math.max(1, Math.round(Math.hypot(n.x - estado.punto.x, n.y - estado.punto.y) * 2));
+    }
+
+    function pintarConexiones(actuales) {
+      const propios = new Map((actuales || []).map((c) => [c.destinoId, c.peso]));
+      const idPropio = estado.editando ? estado.editando.id : null;
+      $('conexiones').innerHTML = estado.nodos.filter((n) => n.id !== idPropio).map((n) => {
+        const marcado = propios.has(n.id);
+        const auto = distanciaAuto(n);
+        // Si el peso guardado coincide con la distancia calculada, se deja vacio (automatico)
+        const valor = marcado && propios.get(n.id) !== auto ? propios.get(n.id) : '';
+        return `<label class="conexion">
+            <input type="checkbox" data-id="${n.id}" ${marcado ? 'checked' : ''}>
+            <span>${esc(n.nombre)}</span>
+            <input type="number" min="1" max="10000" data-peso="${n.id}" placeholder="${auto ? auto + ' m' : 'auto'}" value="${valor}" ${marcado ? '' : 'disabled'} aria-label="Distancia a ${esc(n.nombre)} en metros">
+          </label>`;
+      }).join('');
+    }
+
+    $('conexiones').addEventListener('change', (e) => {
+      if (e.target.type !== 'checkbox') return;
+      $('conexiones').querySelector(`[data-peso="${e.target.dataset.id}"]`).disabled = !e.target.checked;
+      dibujarMini();
+    });
+
+    function conexionesFormulario() {
+      return [...$('conexiones').querySelectorAll('input[type="checkbox"]:checked')].map((c) => {
+        const peso = $('conexiones').querySelector(`[data-peso="${c.dataset.id}"]`).value;
+        return peso === '' ? { destinoId: Number(c.dataset.id) } : { destinoId: Number(c.dataset.id), peso: Number(peso) };
+      });
+    }
+
+    function actualizarPlaceholders() {
+      $('conexiones').querySelectorAll('input[data-peso]').forEach((inp) => {
+        const n = estado.nodos.find((x) => x.id === Number(inp.dataset.peso));
+        const auto = n ? distanciaAuto(n) : '';
+        inp.placeholder = auto ? `${auto} m` : 'auto';
+      });
+    }
+
+    /* ---------- Horarios ---------- */
+    function pintarHorarios(horarios) {
+      const porDia = new Map((horarios || []).map((h) => [h.diaSem, h]));
+      $('horarios').innerHTML = '<span class="tit">Día</span><span class="tit">Atiende</span><span class="tit">Apertura</span><span class="tit">Cierre</span>'
+        + DIAS.map((dia, i) => {
+          const h = porDia.get(i + 1);
+          return `<span>${dia}</span>
+            <input type="checkbox" data-dia="${i + 1}" ${h ? 'checked' : ''} aria-label="Atiende el ${dia}">
+            <input type="time" data-apertura="${i + 1}" value="${h ? h.apertura : '08:00'}" ${h ? '' : 'disabled'} aria-label="Apertura ${dia}">
+            <input type="time" data-cierre="${i + 1}" value="${h ? h.cierre : '18:00'}" ${h ? '' : 'disabled'} aria-label="Cierre ${dia}">`;
+        }).join('');
+    }
+
+    $('horarios').addEventListener('change', (e) => {
+      const dia = e.target.dataset.dia;
+      if (!dia) return;
+      $('horarios').querySelector(`[data-apertura="${dia}"]`).disabled = !e.target.checked;
+      $('horarios').querySelector(`[data-cierre="${dia}"]`).disabled = !e.target.checked;
+    });
+
+    function horariosFormulario() {
+      return [...$('horarios').querySelectorAll('input[data-dia]:checked')].map((c) => ({
+        diaSem: Number(c.dataset.dia),
+        apertura: $('horarios').querySelector(`[data-apertura="${c.dataset.dia}"]`).value,
+        cierre: $('horarios').querySelector(`[data-cierre="${c.dataset.dia}"]`).value,
+      }));
+    }
+
+    /* ---------- Mini plano ---------- */
+    function dibujarMini() {
+      const idPropio = estado.editando ? estado.editando.id : null;
+      const porId = new Map(estado.nodos.map((n) => [n.id, n]));
+      const vecinos = new Set([...$('conexiones').querySelectorAll('input[type="checkbox"]:checked')].map((c) => Number(c.dataset.id)));
+      const patio = estado.nodos.find((n) => n.tipo === '5');
+      let s = '<rect class="campus" x="0" y="0" width="100" height="70" rx="2.5"/>';
+      if (patio) s += `<ellipse class="patio" cx="${patio.x}" cy="${patio.y}" rx="${PATIO.rx}" ry="${PATIO.ry}"/>`;
+      EDIFICIOS.forEach((e) => {
+        s += `<rect class="edificio" x="${e.x}" y="${e.y}" width="${e.w}" height="${e.h}" rx="1.5"/>`;
+        s += `<text class="lbl" x="${e.x + 1.5}" y="${e.y + 3.5}">${esc(e.nombre)}</text>`;
+      });
+      estado.aristas.forEach((a) => {
+        if (a.origenId === idPropio || a.destinoId === idPropio) return;
+        const o = porId.get(a.origenId), d = porId.get(a.destinoId);
+        if (o && d) s += `<line class="arista" x1="${o.x}" y1="${o.y}" x2="${d.x}" y2="${d.y}"/>`;
+      });
+      if (estado.punto) {
+        vecinos.forEach((id) => {
+          const d = porId.get(id);
+          if (d) s += `<line class="arista propia" x1="${estado.punto.x}" y1="${estado.punto.y}" x2="${d.x}" y2="${d.y}"/>`;
+        });
+      }
+      estado.nodos.forEach((n) => {
+        if (n.id === idPropio) return;
+        s += `<circle class="nodo ${vecinos.has(n.id) ? 'vecino' : ''}" cx="${n.x}" cy="${n.y}" r="1.4"><title>${esc(n.nombre)}</title></circle>`;
+      });
+      if (estado.punto) s += `<circle class="nuevo" cx="${estado.punto.x}" cy="${estado.punto.y}" r="1.9"/>`;
+      $('mini').innerHTML = s;
+    }
+
+    function fijarPunto(x, y) {
+      estado.punto = { x, y };
+      $('x').value = x; $('y').value = y;
+      actualizarPlaceholders();
+      dibujarMini();
+    }
+
+    $('mini').addEventListener('click', (e) => {
+      const svg = $('mini');
+      const p = svg.createSVGPoint();
+      p.x = e.clientX; p.y = e.clientY;
+      const q = p.matrixTransform(svg.getScreenCTM().inverse());
+      const x = Math.min(100, Math.max(0, Math.round(q.x * 2) / 2));
+      const y = Math.min(70, Math.max(0, Math.round(q.y * 2) / 2));
+      fijarPunto(x, y);
+    });
+    ['x', 'y'].forEach((id) => $(id).addEventListener('input', () => {
+      const x = Number($('x').value), y = Number($('y').value);
+      if ($('x').value !== '' && $('y').value !== '') fijarPunto(x, y);
+    }));
+
+    /* ---------- Guardar / eliminar ---------- */
+    $('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const datos = {
+        codigo: $('codigo').value,
+        nombre: $('nombre').value,
+        tipoEspacioId: $('tipo').value,
+        pabellonId: $('pabellon').value,
+        piso: $('piso').value,
+        capacidad: $('capacidad').value,
+        ubiDesc: $('ubiDesc').value,
+        x: $('x').value,
+        y: $('y').value,
+        conexiones: conexionesFormulario(),
+        horarios: horariosFormulario(),
+      };
+      $('guardar').disabled = true;
+      const id = estado.editando && estado.editando.id;
+      const r = await pedir(id ? `/api/admin/ambientes/${id}` : '/api/admin/ambientes', {
+        method: id ? 'PUT' : 'POST',
+        body: JSON.stringify(datos),
+      }).catch(() => ({ ok: false, data: { mensaje: 'No hay conexión con el servidor.' } }));
+      $('guardar').disabled = false;
+      if (!r.ok) { mensaje(r.data.mensaje || 'No se pudo guardar el ambiente.'); return; }
+      await recargar();
+      editar(r.data);
+      mensaje(id ? 'Ambiente actualizado. El grafo de rutas ya usa los cambios.' : 'Ambiente creado y conectado al grafo de rutas.', 'ok');
+    });
+
+    $('eliminar').addEventListener('click', async () => {
+      const a = estado.editando;
+      if (!a || !confirm(`¿Eliminar ${a.codigo} · ${a.nombre}? Se quitará del mapa y de las rutas.`)) return;
+      const r = await pedir(`/api/admin/ambientes/${a.id}`, { method: 'DELETE' })
+        .catch(() => ({ ok: false, data: { mensaje: 'No hay conexión con el servidor.' } }));
+      if (!r.ok) { mensaje(r.data.mensaje || 'No se pudo eliminar el ambiente.'); return; }
+      await recargar();
+      limpiar();
+      mensaje(`Ambiente ${a.codigo} eliminado.`, 'ok');
+    });
+
+    $('salir').addEventListener('click', async () => {
+      await pedir('/api/logout', { method: 'POST' }).catch(() => {});
+      location.href = 'login.html';
+    });
+
+    iniciar();
+  </script>
+</body>
+</html>

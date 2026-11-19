@@ -116,62 +116,36 @@ class GrafoRepository {
     }
   }
 
-  // 2. Obtener conexiones entre nodos
+  // 2. Obtener conexiones entre nodos (tabla ARISTA, solo entre ambientes activos)
   async obtenerAristas() {
-    const nodos = await this.obtenerNodos();
-    const aristas = [];
+    try {
+      const pool = await this.obtenerConexion();
 
-    if (nodos.length < 2) {
-      return aristas;
-    }
+      const result = await pool.request().query(`
+        SELECT
+          a.aristaId AS id,
+          a.origenId,
+          a.destinoId,
+          a.peso
+        FROM ARISTA a
+        INNER JOIN ESPACIO o ON o.espacioId = a.origenId AND o.estado = 1
+        INNER JOIN ESPACIO d ON d.espacioId = a.destinoId AND d.estado = 1
+        WHERE a.estado = 1
+      `);
 
-    const patio = nodos.find(n =>
-      n.nombre.toLowerCase().includes('patio')
-    );
-
-    const entrada = nodos.find(n =>
-      n.nombre.toLowerCase().includes('entrada')
-    );
-
-    const calcularDistancia = (a, b) => {
-      const distancia = Math.hypot(
-        b.x - a.x,
-        b.y - a.y
-      );
-
-      return Math.round(
-        distancia * this.METROS_POR_UNIDAD
-      );
-    };
-
-    if (entrada && patio) {
-      aristas.push(
+      return result.recordset.map(registro =>
         new Arista(
-          entrada.id,
-          patio.id,
-          calcularDistancia(entrada, patio)
+          registro.origenId,
+          registro.destinoId,
+          Number(registro.peso),
+          registro.id
         )
       );
-    }
 
-    if (patio) {
-      nodos.forEach(nodo => {
-        if (
-          nodo.id !== patio.id &&
-          (!entrada || nodo.id !== entrada.id)
-        ) {
-          aristas.push(
-            new Arista(
-              patio.id,
-              nodo.id,
-              calcularDistancia(patio, nodo)
-            )
-          );
-        }
-      });
+    } catch (error) {
+      console.error('Error al obtener aristas:', error);
+      return [];
     }
-
-    return aristas;
   }
 
   // 3. Obtener todas las aulas y espacios

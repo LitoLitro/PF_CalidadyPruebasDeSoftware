@@ -1,11 +1,7 @@
 const bcrypt = require('bcrypt');
 const UsuarioRepository = require('../persistence/UsuarioRepository');
 
-const ROLES = {
-    1: 'Estudiante',
-    2: 'Docente',
-    3: 'Administrador'
-};
+const { NOMBRES_ROL: ROLES } = require('../entity/Rol');
 
 class AuthService {
 
