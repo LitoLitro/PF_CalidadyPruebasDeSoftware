@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 const AuthService = require('../control/AuthService');
+const { ROL } = require('../entity/Rol');
 
 // REGISTRO DE USUARIO
 router.post('/api/registro', async (req, res) => {
@@ -64,8 +65,8 @@ router.post('/api/login', async (req, res) => {
             contrasena
         );
 
-        const esEstudiante = usuario.rolId === 1;
-        const esAdministrativo = [2, 3].includes(usuario.rolId);
+        const esEstudiante = usuario.rolId === ROL.ESTUDIANTE;
+        const esAdministrativo = [ROL.DOCENTE, ROL.COLABORADOR, ROL.ADMINISTRADOR].includes(usuario.rolId);
 
         if (
             (tipoUsuario === '1' && !esEstudiante) ||

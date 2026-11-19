@@ -355,7 +355,7 @@
                         (datos.tipoUsuario === '1' && rolId !== 1) ||
                         (
                             datos.tipoUsuario === 'administrativo' &&
-                            ![2, 3].includes(rolId)
+                            ![2, 3, 4].includes(rolId)
                         )
                     ) {
                         throw new Error(
@@ -365,7 +365,7 @@
 
                     mostrarMensaje('¡Bienvenido a MiMundoUPN!', 'green');
 
-                    window.location.href = '/index.html';
+                    window.location.href = rolId === 4 ? '/admin.html' : '/index.html';
 
                 } catch (error) {
                     mostrarMensaje(error.message, 'red');
